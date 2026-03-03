@@ -1,0 +1,49 @@
+use actix_web::{HttpResponse, web};
+use std::sync::{Arc, Mutex};
+use uuid::Uuid;
+
+use crate::engine::engine::Engine;
+use crate::engine::position::PositionType;
+
+#[derive(serde::Deserialize)]
+pub struct OpenRequest {
+    pub asset: String,
+    pub margin: f64,
+    pub leverage: f64,
+    pub position_type: PositionType,
+}
+
+pub async fn open_position(
+    data: web::Data<Arc<Mutex<Engine>>>,
+    req: web::Json<OpenRequest>,
+) -> HttpResponse {
+    let mut engine = data.lock().unwrap();
+
+    let position = engine.open_position(
+        req.asset.clone(),
+        req.margin,
+        req.leverage,
+        req.position_type.clone(),
+    );
+
+    HttpResponse::Ok().json(position)
+}
+#[derive(serde::Deserialize)]
+pub struct PriceUpdate {
+    pub price: f64,
+}
+
+pub async fn update_price(
+    data: web::Data<Arc<Mutex<Engine>>>,
+    req: web::Json<PriceUpdate>,
+) -> HttpResponse {
+    let mut engine = data.lock().unwrap();
+    engine.update_price(req.price);
+
+    HttpResponse::Ok().body("Price updated")
+}
+pub async fn get_positions(data: web::Data<Arc<Mutex<Engine>>>) -> HttpResponse {
+    let engine = data.lock().unwrap();
+
+    HttpResponse::Ok().json(&engine.positions)
+}
