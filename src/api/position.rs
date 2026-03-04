@@ -28,6 +28,7 @@ pub async fn open_position(
 
     HttpResponse::Ok().json(position)
 }
+
 #[derive(serde::Deserialize)]
 pub struct PriceUpdate {
     pub price: f64,
@@ -46,4 +47,22 @@ pub async fn get_positions(data: web::Data<Arc<Mutex<Engine>>>) -> HttpResponse 
     let engine = data.lock().unwrap();
 
     HttpResponse::Ok().json(&engine.positions)
+}
+
+#[derive(serde::Deserialize)]
+//Only when you need to parse JSON into a struct
+pub struct CloseRequest {
+    pub position_id: Uuid,
+}
+
+pub async fn close_position(
+    data: web::Data<Arc<Mutex<Engine>>>,
+    req: web::Json<CloseRequest>,
+) -> HttpResponse {
+    let mut engine = data.lock().unwrap();
+
+    match engine.close_position(req.position_id) {
+        Some(position) => HttpResponse::Ok().json(position),
+        None => HttpResponse::NotFound().body("Position not found"),
+    }
 }
