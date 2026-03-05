@@ -23,13 +23,21 @@ impl Engine {
         margin: f64,
         leverage: f64,
         position_type: PositionType,
-    ) -> Position {
+    ) -> Result<Position, String> {
+        if margin <= 0.0 {
+            return Err("Margin must be positive".into());
+        }
+
+        if leverage <= 0.0 {
+            return Err("Leverage must be positive".into());
+        }
+
         if self.current_price <= 0.0 {
-            panic!("Market price not initialized");
+            return Err("Market price not initialized".into());
         }
 
         if margin > self.balance {
-            panic!("Insufficient balance");
+            return Err("Insufficient balance".into());
         }
 
         self.balance -= margin;
@@ -50,9 +58,12 @@ impl Engine {
 
         self.positions.insert(position.id, position.clone());
 
-        position
+        Ok(position)
     }
-    pub fn update_price(&mut self, new_price: f64) {
+    pub fn update_price(&mut self, new_price: f64) -> Result<(), String> {
+        if new_price <= 0.0 {
+            return Err("Price must be positive".into());
+        }
         self.current_price = new_price;
 
         for position in self.positions.values_mut() {
@@ -67,6 +78,7 @@ impl Engine {
 
             position.pnl = pnl;
         }
+        Ok(())
     }
 
     pub fn close_position(&mut self, position_id: Uuid) -> Option<Position> {

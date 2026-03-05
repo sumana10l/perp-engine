@@ -19,14 +19,15 @@ pub async fn open_position(
 ) -> HttpResponse {
     let mut engine = data.lock().unwrap();
 
-    let position = engine.open_position(
+    match engine.open_position(
         req.asset.clone(),
         req.margin,
         req.leverage,
         req.position_type.clone(),
-    );
-
-    HttpResponse::Ok().json(position)
+    ) {
+        Ok(position) => HttpResponse::Ok().json(position),
+        Err(err) => HttpResponse::BadRequest().body(err),
+    }
 }
 
 #[derive(serde::Deserialize)]
@@ -39,9 +40,11 @@ pub async fn update_price(
     req: web::Json<PriceUpdate>,
 ) -> HttpResponse {
     let mut engine = data.lock().unwrap();
-    engine.update_price(req.price);
 
-    HttpResponse::Ok().body("Price updated")
+    match engine.update_price(req.price) {
+        Ok(_) => HttpResponse::Ok().body("Price updated"),
+        Err(err) => HttpResponse::BadRequest().body(err),
+    }
 }
 pub async fn get_positions(data: web::Data<Arc<Mutex<Engine>>>) -> HttpResponse {
     let engine = data.lock().unwrap();
