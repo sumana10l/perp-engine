@@ -84,8 +84,5 @@ open position
 update price
 verify pnl
 close position
-```
-
----
 
 ```
