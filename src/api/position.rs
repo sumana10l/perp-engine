@@ -30,22 +30,6 @@ pub async fn open_position(
     }
 }
 
-#[derive(serde::Deserialize)]
-pub struct PriceUpdate {
-    pub price: f64,
-}
-
-pub async fn update_price(
-    data: web::Data<Arc<Mutex<Engine>>>,
-    req: web::Json<PriceUpdate>,
-) -> HttpResponse {
-    let mut engine = data.lock().unwrap();
-
-    match engine.update_price(req.price) {
-        Ok(_) => HttpResponse::Ok().body("Price updated"),
-        Err(err) => HttpResponse::BadRequest().body(err),
-    }
-}
 pub async fn get_positions(data: web::Data<Arc<Mutex<Engine>>>) -> HttpResponse {
     let engine = data.lock().unwrap();
 

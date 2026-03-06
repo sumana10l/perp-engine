@@ -3,17 +3,7 @@
 BASE_URL="http://127.0.0.1:8080"
 
 echo "---------------------------------"
-echo "1️⃣ Initializing market price"
-echo "---------------------------------"
-
-curl -s -X POST $BASE_URL/price/update \
--H "Content-Type: application/json" \
--d '{"price":100}'
-
-echo -e "\n"
-
-echo "---------------------------------"
-echo "2️⃣ Opening position"
+echo "1️⃣ Opening position"
 echo "---------------------------------"
 
 OPEN_RESPONSE=$(curl -s -X POST $BASE_URL/position/open \
@@ -35,31 +25,27 @@ echo $POSITION_ID
 echo -e "\n"
 
 echo "---------------------------------"
-echo "3️⃣ Checking open positions"
+echo "2️⃣ Checking open positions"
 echo "---------------------------------"
 
 curl -s $BASE_URL/positions
 echo -e "\n"
 
 echo "---------------------------------"
-echo "4️⃣ Simulating price increase"
+echo "3️⃣ Waiting for market movement..."
 echo "---------------------------------"
 
-curl -s -X POST $BASE_URL/price/update \
--H "Content-Type: application/json" \
--d '{"price":120}'
-
-echo -e "\n"
+sleep 5
 
 echo "---------------------------------"
-echo "5️⃣ Checking positions after price move"
+echo "4️⃣ Checking positions after market move"
 echo "---------------------------------"
 
 curl -s $BASE_URL/positions
 echo -e "\n"
 
 echo "---------------------------------"
-echo "6️⃣ Closing position"
+echo "5️⃣ Closing position"
 echo "---------------------------------"
 
 curl -s -X POST $BASE_URL/position/close \
@@ -69,7 +55,7 @@ curl -s -X POST $BASE_URL/position/close \
 echo -e "\n"
 
 echo "---------------------------------"
-echo "7️⃣ Final positions state"
+echo "6️⃣ Final positions state"
 echo "---------------------------------"
 
 curl -s $BASE_URL/positions
