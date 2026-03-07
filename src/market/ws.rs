@@ -1,11 +1,10 @@
+use crate::engine::event::EngineEvent;
 use futures_util::StreamExt;
 use serde_json::Value;
-use std::sync::{Arc, Mutex};
+use tokio::sync::mpsc::Sender;
 use tokio_tungstenite::connect_async;
 
-use crate::engine::engine::Engine;
-
-pub async fn start_price_feed(engine: Arc<Mutex<Engine>>) {
+pub async fn start_price_feed(tx: Sender<EngineEvent>) {
     let url = "wss://stream.binance.com:9443/ws/solusdt@trade";
 
     let (ws_stream, _) = connect_async(url).await.expect("Failed to connect");
@@ -24,9 +23,7 @@ pub async fn start_price_feed(engine: Arc<Mutex<Engine>>) {
             if let Some(price_str) = json["p"].as_str() {
                 let price: f64 = price_str.parse().unwrap();
 
-                let mut engine = engine.lock().unwrap();
-
-                let _ = engine.update_price(price);
+                let _ = tx.send(EngineEvent::PriceUpdate(price)).await;
 
                 if (price - last_price).abs() > 0.01 {
                     println!("Market price updated: {}", price);

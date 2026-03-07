@@ -7,17 +7,33 @@ use crate::api::position::close_position;
 use crate::api::position::get_positions;
 use crate::api::position::open_position;
 use crate::engine::engine::Engine;
+use crate::engine::event::EngineEvent;
 use crate::market::ws::start_price_feed;
+use tokio::sync::mpsc;
 
 #[actix_web::main]
 
 async fn main() -> std::io::Result<()> {
     let engine = Arc::new(Mutex::new(Engine::new(1000.0)));
     // move transfers ownership of captured variables into the closure.
+    let (tx, mut rx) = mpsc::channel::<EngineEvent>(100);
+
+    let tx_clone = tx.clone();
+    tokio::spawn(async move {
+        start_price_feed(tx_clone).await;
+    });
     let engine_clone = engine.clone();
 
     tokio::spawn(async move {
-        start_price_feed(engine_clone).await;
+        while let Some(event) = rx.recv().await {
+            let mut engine = engine_clone.lock().unwrap();
+
+            match event {
+                EngineEvent::PriceUpdate(price) => {
+                    let _ = engine.update_price(price);
+                }
+            }
+        }
     });
 
     HttpServer::new(move || {
