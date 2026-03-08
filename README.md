@@ -1,18 +1,76 @@
 # Perp Engine (Rust)
 
-A minimal **perpetual trading backend** built with Actix Web.
-The project simulates core exchange logic like margin trading, leverage, and PnL updates.
+A minimal **event-driven perpetual trading backend** written in Rust.
+
+The engine simulates core exchange mechanics including margin trading,
+leverage, position management, and real-time PnL updates using live
+market data from Binance.
 
 ---
 
 # Features
 
-* Open leveraged positions
-* Long / Short support
-* Real-time PnL updates
-* Close positions
-* In-memory trading engine
-* REST API
+- Open leveraged positions
+- Long / Short support
+- Real-time PnL updates
+- Close positions
+- Event-driven trading engine
+- Live price feed from Binance WebSocket
+- REST API using Actix Web
+- In-memory engine state
+
+---
+
+# Architecture
+
+```
+Binance WebSocket
+        │
+        ▼
+Market Data Feed
+        │
+        ▼
+mpsc Channel
+        │
+        ▼
+Engine Event Loop
+        │
+        ▼
+Trading Engine State
+        ▲
+        │
+     Actix API
+```
+
+---
+
+# Tech Stack
+
+- Rust
+- Tokio
+- Actix Web
+- tokio-tungstenite
+- serde / serde_json
+
+---
+
+# Project Structure
+
+```
+src/
+ ├ engine/
+ │   ├ engine.rs
+ │   ├ position.rs
+ │   └ event.rs
+ │
+ ├ api/
+ │   └ position.rs
+ │
+ ├ market/
+ │   └ ws.rs
+ │
+ └ main.rs
+```
 
 ---
 
@@ -30,29 +88,26 @@ Server runs on:
 http://127.0.0.1:8080
 ```
 
+The engine will automatically connect to the Binance WebSocket
+and stream live SOL price updates.
+
 ---
 
 # API Endpoints
 
-**Open Position**
+### Open Position
 
 ```
 POST /position/open
 ```
 
-**Update Price**
-
-```
-POST /price/update
-```
-
-**Get Positions**
+### Get Positions
 
 ```
 GET /positions
 ```
 
-**Close Position**
+### Close Position
 
 ```
 POST /position/close
@@ -60,7 +115,24 @@ POST /position/close
 
 ---
 
-# Test the Engine
+# Example Request
+
+Open a long position:
+
+```json
+POST /position/open
+
+{
+  "asset": "SOL",
+  "margin": 100,
+  "leverage": 5,
+  "position_type": "Long"
+}
+```
+
+---
+
+# Testing the Engine
 
 Run the test script to simulate a full trade lifecycle.
 
@@ -79,10 +151,8 @@ Then run:
 The script will:
 
 ```
-initialize price
 open position
-update price
+wait for market movement
 verify pnl
 close position
-
 ```
