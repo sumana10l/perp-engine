@@ -9,6 +9,7 @@ use crate::api::position::open_position;
 use crate::engine::engine::Engine;
 use crate::engine::event::EngineEvent;
 use crate::market::ws::start_price_feed;
+use actix_cors::Cors;
 use tokio::sync::mpsc;
 
 #[actix_web::main]
@@ -38,6 +39,12 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .wrap(
+                Cors::default()
+                    .allow_any_origin()
+                    .allow_any_method()
+                    .allow_any_header(),
+            )
             .app_data(web::Data::new(engine.clone()))
             .route("/position/open", web::post().to(open_position))
             .route("/positions", web::get().to(get_positions))
