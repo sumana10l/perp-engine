@@ -38,3 +38,17 @@ export async function closePosition(positionId: string) {
     if (!res.ok) throw new Error("Failed to close position");
     return res.json();
 }
+export async function getPrice() {
+    const res = await fetch(`${API_BASE}/price`);
+
+    if (!res.ok) throw new Error("Failed to fetch price");
+
+    return res.json();
+}
+export async function getBalance() {
+    const res = await fetch(`${API_BASE}/balance`);
+
+    if (!res.ok) throw new Error("Failed to fetch balance");
+
+    return res.json();
+}

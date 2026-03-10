@@ -11,6 +11,8 @@ use crate::engine::event::EngineEvent;
 use crate::market::ws::start_price_feed;
 use actix_cors::Cors;
 use tokio::sync::mpsc;
+use crate::api::position::get_price;
+use crate::api::position::get_balance;
 
 #[actix_web::main]
 
@@ -49,6 +51,8 @@ async fn main() -> std::io::Result<()> {
             .route("/position/open", web::post().to(open_position))
             .route("/positions", web::get().to(get_positions))
             .route("/position/close", web::post().to(close_position))
+            .route("/price", web::get().to(get_price))
+            .route("/balance", web::get().to(get_balance))
     })
     .bind(("127.0.0.1", 8080))?
     .run()

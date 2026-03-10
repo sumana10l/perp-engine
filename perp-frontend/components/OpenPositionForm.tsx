@@ -8,7 +8,7 @@ export default function OpenPositionForm() {
     const [leverage, setLeverage] = useState(5);
     const [positionType, setPositionType] = useState("Long");
     const [loading, setLoading] = useState(false);
-
+    
     const handleSubmit = async () => {
         setLoading(true);
 
@@ -21,12 +21,16 @@ export default function OpenPositionForm() {
             });
 
             alert("Position opened successfully");
+            setMargin(100);
+            setLeverage(5);
+            setPositionType("Long");
         } catch (error) {
             console.error(error);
             alert("Failed to open position");
         }
 
         setLoading(false);
+      
     };
 
     return (

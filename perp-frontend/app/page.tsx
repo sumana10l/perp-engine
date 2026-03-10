@@ -1,5 +1,6 @@
 import OpenPositionForm from "../components/OpenPositionForm";
 import PositionsTable from "../components/PositionsTable";
+import MarketInfo from "../components/MarketInfo";
 
 export default function Home() {
   return (
@@ -7,6 +8,7 @@ export default function Home() {
       <h1 className="text-3xl font-bold mb-10">
         Perp Trading Dashboard
       </h1>
+      <MarketInfo />
 
       <div className="grid grid-cols-2 gap-12 items-start">
         <OpenPositionForm />

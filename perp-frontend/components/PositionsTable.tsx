@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { getPositions, closePosition } from "../services/api";
 
 export default function PositionsTable() {
-  const [positions, setPositions] = useState<any>({});
+  // const [positions, setPositions] = useState<any>({});
+  const [positions, setPositions] = useState<any[]>([]);
 
   const loadPositions = async () => {
     const data = await getPositions();
@@ -34,9 +35,10 @@ export default function PositionsTable() {
           <tr className="border-b">
             <th>ID</th>
             <th>Entry</th>
-            <th>Margin</th>
+            <th>Margin($)</th>
             <th>Leverage</th>
-            <th>PnL</th>
+            <th>PnL($)</th>
+            <th>Type</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -50,6 +52,17 @@ export default function PositionsTable() {
               <td>{p.leverage}x</td>
               <td className={p.pnl >= 0 ? "text-green-600" : "text-red-600"}>
                 {p.pnl.toFixed(2)}
+              </td>
+              <td>
+                <span
+                  className={
+                    p.position_type === "Long"
+                      ? "bg-green-200 text-green-800 px-2 py-1 rounded"
+                      : "bg-red-200 text-red-800 px-2 py-1 rounded"
+                  }
+                >
+                  {p.position_type}
+                </span>
               </td>
               <td>
                 <button
