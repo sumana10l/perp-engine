@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { getPrice, getBalance } from "../services/api";
+type MarketInfoProps = {
+  balance: number;
+  setBalance: React.Dispatch<React.SetStateAction<number>>;
+};
 
-export default function MarketInfo() {
+export default function MarketInfo({ balance, setBalance }: MarketInfoProps) {
   const [price, setPrice] = useState(0);
-  const [balance, setBalance] = useState(0);
 
   const fetchData = async () => {
     try {

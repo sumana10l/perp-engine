@@ -13,7 +13,7 @@ use actix_cors::Cors;
 use tokio::sync::mpsc;
 use crate::api::position::get_price;
 use crate::api::position::get_balance;
-
+use crate::api::position::get_trade_history;
 #[actix_web::main]
 
 async fn main() -> std::io::Result<()> {
@@ -53,6 +53,7 @@ async fn main() -> std::io::Result<()> {
             .route("/position/close", web::post().to(close_position))
             .route("/price", web::get().to(get_price))
             .route("/balance", web::get().to(get_balance))
+            .route("/trade-history", web::get().to(get_trade_history))
     })
     .bind(("127.0.0.1", 8080))?
     .run()

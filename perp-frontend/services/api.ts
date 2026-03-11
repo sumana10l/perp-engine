@@ -52,3 +52,12 @@ export async function getBalance() {
 
     return res.json();
 }
+export const getTradeHistory = async () => {
+    const res = await fetch(`${API_BASE}/trade-history`);
+  
+    if (!res.ok) {
+      throw new Error("Failed to fetch trade history");
+    }
+  
+    return res.json();
+  };

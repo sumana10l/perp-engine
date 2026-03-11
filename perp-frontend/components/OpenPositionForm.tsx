@@ -2,15 +2,33 @@
 
 import { useState } from "react";
 import { openPosition } from "../services/api";
-
-export default function OpenPositionForm() {
+type Props = {
+    balance: number;
+  };
+export default function OpenPositionForm({ balance }: Props) {
     const [margin, setMargin] = useState(100);
     const [leverage, setLeverage] = useState(5);
     const [positionType, setPositionType] = useState("Long");
     const [loading, setLoading] = useState(false);
     
     const handleSubmit = async () => {
-        setLoading(true);
+        
+        if (margin <= 0) {
+            alert("Margin must be greater than 0");
+            return;
+          }
+        
+          if (leverage > 20) {
+            alert("Max leverage is 20x");
+            return;
+          }
+        
+          if (margin > balance) {
+            alert("Not enough balance");
+            return;
+          }
+          setLoading(true);
+
 
         try {
             await openPosition({

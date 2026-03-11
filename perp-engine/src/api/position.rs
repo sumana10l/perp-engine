@@ -4,7 +4,6 @@ use uuid::Uuid;
 
 use crate::engine::engine::Engine;
 use crate::engine::position::PositionType;
-
 #[derive(serde::Deserialize)]
 pub struct OpenRequest {
     pub asset: String,
@@ -70,4 +69,11 @@ pub async fn get_balance(
     HttpResponse::Ok().json(serde_json::json!({
         "balance": engine.balance
     }))
+}
+pub async fn get_trade_history(
+    data: web::Data<Arc<Mutex<Engine>>>,
+) -> HttpResponse {
+    let engine = data.lock().unwrap();
+
+    HttpResponse::Ok().json(&engine.trade_history)
 }
