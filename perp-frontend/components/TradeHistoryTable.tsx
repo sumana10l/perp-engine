@@ -4,69 +4,67 @@ import { useEffect, useState } from "react";
 import { getTradeHistory } from "../services/api";
 
 export default function TradeHistoryTable() {
-    const [trades, setTrades] = useState<any[]>([]);
+  const [trades, setTrades] = useState<any[]>([]);
 
-    const loadTrades = async () => {
-      try {
-        const data = await getTradeHistory();
-        setTrades(data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-  
-    useEffect(() => {
-      loadTrades();
-  
-      const interval = setInterval(loadTrades, 3000);
-      return () => clearInterval(interval);
-    }, []);
+  const loadTrades = async () => {
+    try {
+      const data = await getTradeHistory();
+      setTrades(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    loadTrades();
+
+    const interval = setInterval(loadTrades, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <div className="mt-10 max-w-4xl mx-auto">
-    <h2 className="text-xl font-bold mb-4">Trade History</h2>
-  
-    <div className="bg-white rounded-lg border shadow overflow-hidden">
-      <table className="w-full text-center">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="py-3">Entry</th>
-            <th className="py-3">Exit</th>
-            <th className="py-3">PnL ($)</th>
-            <th className="py-3">Type</th>
-          </tr>
-        </thead>
-  
-        <tbody>
-          {trades.map((t, i) => (
-            <tr key={i} className="border-t hover:bg-gray-50">
-              <td className="py-3">{t.entry.toFixed(2)}</td>
-              <td className="py-3">{t.exit.toFixed(2)}</td>
-  
-              <td
-                className={`py-3 font-semibold ${
-                  t.pnl >= 0 ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {t.pnl.toFixed(2)}
-              </td>
-  
-              <td className="py-3">
-                <span
-                  className={
-                    t.position_type === "Long"
-                      ? "bg-green-100 text-green-700 px-3 py-1 rounded-md font-medium"
-                      : "bg-red-100 text-red-700 px-3 py-1 rounded-md font-medium"
-                  }
-                >
-                  {t.position_type}
-                </span>
-              </td>
+    <div className="mt-10 max-w-full mx-auto rounded-xl bg-gray-900 shadow p-4">
+      <h2 className="text-lg font-bold text-white mb-4">Trade History</h2>
+
+      <div className="overflow-y-auto max-h-[300px] rounded-lg border border-gray-700">
+        <table className="w-full text-center text-sm text-gray-300">
+          <thead className="bg-gray-800 text-gray-400 font-semibold">
+            <tr>
+              <th className="py-2">Entry</th>
+              <th className="py-2">Exit</th>
+              <th className="py-2">PnL ($)</th>
+              <th className="py-2">Type</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody>
+            {trades.map((t, i) => (
+              <tr key={i} className="border-t border-gray-700 hover:bg-gray-800">
+                <td className="py-2">{t.entry.toFixed(2)}</td>
+                <td className="py-2">{t.exit.toFixed(2)}</td>
+
+                <td
+                  className={`py-2 font-semibold ${t.pnl >= 0 ? "text-green-400" : "text-red-400"
+                    }`}
+                >
+                  {t.pnl.toFixed(2)}
+                </td>
+
+                <td className="py-2">
+                  <span
+                    className={`px-3 py-1 rounded-md font-medium ${t.position_type === "Long"
+                        ? "bg-green-800 text-green-400"
+                        : "bg-red-800 text-red-400"
+                      }`}
+                  >
+                    {t.position_type}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
   );
 }

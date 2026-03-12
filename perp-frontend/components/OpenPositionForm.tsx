@@ -3,97 +3,178 @@
 import { useState } from "react";
 import { openPosition } from "../services/api";
 type Props = {
-    balance: number;
+  balance: number;
+  price: number;
+};
+export default function OpenPositionForm({ balance, price }: Props) {
+  const [margin, setMargin] = useState(100);
+  const [leverage, setLeverage] = useState(5);
+  const [positionType, setPositionType] = useState("Long");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+
+    if (margin <= 0) {
+      alert("Margin must be greater than 0");
+      return;
+    }
+
+    if (leverage > 20) {
+      alert("Max leverage is 20x");
+      return;
+    }
+
+    if (margin > balance) {
+      alert("Not enough balance");
+      return;
+    }
+    setLoading(true);
+
+
+    try {
+      await openPosition({
+        asset: "SOL",
+        margin,
+        leverage,
+        position_type: positionType,
+      });
+
+      alert("Position opened successfully");
+      setMargin(100);
+      setLeverage(5);
+      setPositionType("Long");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to open position");
+    }
+
+    setLoading(false);
+
   };
-export default function OpenPositionForm({ balance }: Props) {
-    const [margin, setMargin] = useState(100);
-    const [leverage, setLeverage] = useState(5);
-    const [positionType, setPositionType] = useState("Long");
-    const [loading, setLoading] = useState(false);
-    
-    const handleSubmit = async () => {
-        
-        if (margin <= 0) {
-            alert("Margin must be greater than 0");
-            return;
-          }
-        
-          if (leverage > 20) {
-            alert("Max leverage is 20x");
-            return;
-          }
-        
-          if (margin > balance) {
-            alert("Not enough balance");
-            return;
-          }
-          setLoading(true);
+  const marginRequired = margin;
+  const positionSize = margin * leverage;
 
+  let liquidationPrice: number | null = null;
+  if (price > 0) {
+    if (positionType === "Long") {
+      liquidationPrice = price * (1 - 1 / leverage);
+    } else {
+      liquidationPrice = price * (1 + 1 / leverage);
+    }
+  }
+  return (
+    <div className="bg-gray-900 p-6 rounded-xl shadow-lg flex flex-col space-y-6 text-white">
 
-        try {
-            await openPosition({
-                asset: "SOL",
-                margin,
-                leverage,
-                position_type: positionType,
-            });
+      <div className="flex space-x-3">
+        <button
+          onClick={() => setPositionType("Long")}
+          className={`flex-grow py-2 rounded font-semibold ${positionType === "Long" ? "bg-green-600" : "bg-gray-700"
+            }`}
+        >
+          Buy / Long
+        </button>
+        <button
+          onClick={() => setPositionType("Short")}
+          className={`flex-grow py-2 rounded font-semibold ${positionType === "Short" ? "bg-red-600" : "bg-gray-700"
+            }`}
+        >
+          Sell / Short
+        </button>
+      </div>
 
-            alert("Position opened successfully");
-            setMargin(100);
-            setLeverage(5);
-            setPositionType("Long");
-        } catch (error) {
-            console.error(error);
-            alert("Failed to open position");
-        }
+      <div className="flex space-x-3 text-sm font-semibold mb-3">
+        {["Limit", "Market", "Conditional"].map((type) => (
+          <button
+            key={type}
+            onClick={() => setPositionType(type)}
+            className={`px-3 py-1 rounded ${positionType === type ? "bg-gray-700" : "bg-gray-800"
+              }`}
+          >
+            {type}
+          </button>
+        ))}
+      </div>
 
-        setLoading(false);
-      
-    };
-
-    return (
-        <div className="p-6 border rounded-lg w-96 bg-white shadow">
-            <h2 className="text-xl font-semibold mb-4">Open Position</h2>
-
-            <div className="mb-3">
-                <label className="block mb-1">Margin</label>
-                <input
-                    type="number"
-                    value={margin}
-                    onChange={(e) => setMargin(Number(e.target.value))}
-                    className="border p-2 w-full"
-                />
-            </div>
-
-            <div className="mb-3">
-                <label className="block mb-1">Leverage</label>
-                <input
-                    type="number"
-                    value={leverage}
-                    onChange={(e) => setLeverage(Number(e.target.value))}
-                    className="border p-2 w-full"
-                />
-            </div>
-
-            <div className="mb-4">
-                <label className="block mb-1">Position Type</label>
-                <select
-                    value={positionType}
-                    onChange={(e) => setPositionType(e.target.value)}
-                    className="border p-2 w-full"
-                >
-                    <option value="Long">Long</option>
-                    <option value="Short">Short</option>
-                </select>
-            </div>
-
-            <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="bg-blue-500 text-white px-4 py-2 rounded w-full"
-            >
-                {loading ? "Opening..." : "Open Position"}
-            </button>
+      <div>
+        <label className="block text-xs mb-1">Price</label>
+        <div className="flex items-center space-x-2">
+          <input
+            type="number"
+            className="flex-grow bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white"
+            placeholder="Price"
+          />
+          <div className="space-x-2 text-xs">
+            <button className="px-2 py-1 bg-gray-700 rounded">Mid</button>
+            <button className="px-2 py-1 bg-gray-700 rounded">BBO</button>
+          </div>
         </div>
-    );
+      </div>
+
+      <div>
+        <label className="block text-xs mb-1">Quantity</label>
+        <div className="flex items-center space-x-2 mb-1">
+          <input
+            type="number"
+            value={margin}
+            onChange={(e) => setMargin(Number(e.target.value))}
+            className="flex-grow bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white"
+            placeholder="Quantity"
+          />
+          <div className="text-xs text-gray-400">SOL</div>
+        </div>
+
+        <input
+          type="range"
+          min={0}
+          max={balance}
+          value={margin}
+          onChange={(e) => setMargin(Number(e.target.value))}
+          className="w-full"
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs mb-1">Order Value</label>
+        <input
+          type="number"
+          value={(margin * leverage).toFixed(2)}
+          readOnly
+          className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white w-full"
+        />
+      </div>
+      <div>
+        <label className="block text-xs mb-2">Leverage</label>
+
+        <div className="grid grid-cols-4 gap-2">
+          {[5, 10, 20, 50].map((l) => (
+            <button
+              key={l}
+              onClick={() => setLeverage(l)}
+              className={`py-2 rounded text-sm font-semibold ${leverage === l ? "bg-blue-600" : "bg-gray-700"
+                }`}
+            >
+              {l}x
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="text-xs text-gray-400 space-y-1">
+        <div>Available Equity: ${balance.toFixed(2)}</div>
+        <div>Margin Required: ${margin.toFixed(2)}</div>
+        <div>
+          Est. Liquidation Price: {liquidationPrice ? `$${liquidationPrice.toFixed(2)}` : "-"}
+
+        </div>
+
+        <button className="bg-white text-black rounded py-3 font-semibold w-full"
+          onClick={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? "Opening..." : "Open Position"}
+        </button>
+
+      </div>
+    </div>
+  );
 }
