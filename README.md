@@ -1,55 +1,93 @@
-# Perp Engine
+```markdown
+# 📈 Perp Engine
 
-A simplified perpetual futures trading engine with a **Rust backend** and a **Next.js trading dashboard**.  
-The backend consumes real-time market prices and exposes APIs used by the frontend trading interface.
+A full-stack, real-time perpetual futures trading platform. This project combines a high-performance **Rust** trading engine with a reactive **Next.js** dashboard to simulate a professional derivatives exchange.
 
-## Screenshot
+## ✨ Project Overview
 
+This platform is designed to handle the high-concurrency and high-precision requirements of financial trading. It features a custom-built risk engine that processes live market data from Binance to manage leveraged positions and liquidations.
+
+### 🎥 Dashboard Preview
 ![Trading Dashboard](./screenshots/dashboard.png)
 
-## Architecture
+---
 
-```
-Binance WebSocket → Rust Trading Engine → REST API → Frontend Dashboard
-```
+## 🏗 System Architecture
 
-The backend subscribes to the **:contentReference[oaicite:0]{index=0} trade stream for live market prices**, processes them inside the engine, and exposes the state to the frontend.
+The project is split into two specialized domains to ensure low-latency data processing and a smooth user experience.
 
-## Repository Structure
 
-```
+
+1. **Market Worker (Rust):** An asynchronous worker that maintains a persistent WebSocket connection to Binance, streaming live SOL/USDT trades.
+2. **Risk Engine (Rust):** A state machine that utilizes fixed-point arithmetic (`rust_decimal`) to calculate PnL and trigger auto-liquidations.
+3. **API Layer (Actix-Web):** A thread-safe REST API that exposes engine state via protected shared memory.
+4. **Trading Dashboard (Next.js):** A professional-grade UI featuring real-time price charts and position management.
+
+---
+
+## ⚙️ Core Mechanics
+
+* **Leveraged Trading:** Supports 5x to 50x leverage with real-time margin validation.
+* **Auto-Liquidation:** Positions are automatically closed if the mark price hits the calculated liquidation threshold to protect exchange solvency.
+* **High Precision:** Zero floating-point errors by using `Decimal` types for all financial math.
+* **Event-Driven:** Decoupled architecture using MPSC channels for non-blocking state updates.
+
+---
+
+## 🛠 Tech Stack
+
+| Domain | Technology |
+| :--- | :--- |
+| **Backend** | Rust, Actix-Web, Tokio, WebSockets, Rust Decimal |
+| **Frontend** | Next.js, React, TypeScript, Tailwind CSS, Financial Charts |
+| **DevOps** | Docker (optional), Shell Scripting (automated testing) |
+
+---
+
+## 📂 Repository Structure
+
+```text
 perp-engine/
- ├─ backend/     # Trading engine and API
- ├─ frontend/    # Trading dashboard
- └─ README.md
+ ├─ backend/     # Rust Trading Engine & REST API
+ ├─ frontend/    # Next.js Trading Dashboard
+ └─ README.md    # Project Overview
+
 ```
 
-## Tech Stack
+---
 
-**Backend**
-- Rust
-- Actix Web
-- Tokio
-- tokio-tungstenite (WebSocket client)
+## 🚀 Getting Started
 
-**Frontend**
-- Next.js
-- React
-- TypeScript
+### 1. Start the Backend
 
-## Run Locally
-
-### Start Backend
-```
+```bash
 cd backend
 cargo run
+
 ```
 
-### Start Frontend
-```
+The server will start on `http://127.0.0.1:8080` and begin streaming live prices.
+
+### 2. Start the Frontend
+
+```bash
 cd frontend
 npm install
 npm run dev
+
 ```
 
-Open: `http://localhost:3000`
+Open [http://localhost:3000](https://www.google.com/search?q=http://localhost:3000) to start trading.
+
+---
+
+## 🧪 Automated Testing
+
+The backend includes a comprehensive test suite to verify the trading lifecycle:
+
+```bash
+cd backend
+./test_engine.sh
+
+```
+

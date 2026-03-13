@@ -1,12 +1,14 @@
+use crate::engine::position::{Position, PositionType};
+use crate::engine::trade::Trade;
+use rust_decimal::prelude::*;
+use rust_decimal_macros::dec;
 use std::collections::HashMap;
 use uuid::Uuid;
 
-use crate::engine::position::{Position, PositionType};
-use crate::engine::trade::Trade;
 pub struct Engine {
     pub positions: HashMap<Uuid, Position>,
-    pub current_price: f64,
-    pub balance: f64,
+    pub current_price: Decimal,
+    pub balance: Decimal,
     pub trade_history: Vec<Trade>,
 }
 
@@ -14,27 +16,28 @@ impl Engine {
     pub fn new(initial_balance: f64) -> Self {
         Self {
             positions: HashMap::new(),
-            current_price: 0.0,
-            balance: initial_balance,
+            current_price: dec!(0.0),
+            balance: Decimal::from_f64(initial_balance).unwrap_or(dec!(0.0)),
             trade_history: Vec::new(),
         }
     }
+
     pub fn open_position(
         &mut self,
         asset: String,
-        margin: f64,
-        leverage: f64,
+        margin: Decimal,
+        leverage: Decimal,
         position_type: PositionType,
     ) -> Result<Position, String> {
-        if margin <= 0.0 {
+        if margin <= dec!(0.0) {
             return Err("Margin must be positive".into());
         }
 
-        if leverage <= 0.0 {
+        if leverage <= dec!(0.0) {
             return Err("Leverage must be positive".into());
         }
 
-        if self.current_price <= 0.0 {
+        if self.current_price <= dec!(0.0) {
             return Err("Market price not initialized".into());
         }
 
@@ -49,10 +52,11 @@ impl Engine {
         let entry_price = self.current_price;
 
         let liquidation_price = if position_type == PositionType::Long {
-            entry_price * (1.0 - 1.0 / leverage)
+            entry_price * (dec!(1.0) - (dec!(1.0) / leverage))
         } else {
-            entry_price * (1.0 + 1.0 / leverage)
+            entry_price * (dec!(1.0) + (dec!(1.0) / leverage))
         };
+
         let position = Position {
             id: Uuid::new_v4(),
             asset,
@@ -60,7 +64,7 @@ impl Engine {
             quantity,
             margin,
             leverage,
-            pnl: 0.0,
+            pnl: dec!(0.0),
             position_type,
             liquidation_price,
         };
@@ -69,11 +73,22 @@ impl Engine {
 
         Ok(position)
     }
-    pub fn update_price(&mut self, new_price: f64) -> Result<(), String> {
-        if new_price <= 0.0 {
+
+    pub fn update_price(&mut self, new_price: Decimal) -> Result<(), String> {
+        if new_price <= dec!(0.0) {
             return Err("Price must be positive".into());
         }
         self.current_price = new_price;
+
+        let to_liquidate: Vec<Uuid> = self
+            .positions
+            .values()
+            .filter(|p| match p.position_type {
+                PositionType::Long => self.current_price <= p.liquidation_price,
+                PositionType::Short => self.current_price >= p.liquidation_price,
+            })
+            .map(|p| p.id)
+            .collect();
 
         for position in self.positions.values_mut() {
             let pnl = match position.position_type {
@@ -84,9 +99,14 @@ impl Engine {
                     (position.entry_price - self.current_price) * position.quantity
                 }
             };
-
             position.pnl = pnl;
         }
+
+        for id in to_liquidate {
+            println!("Liquidating position: {}", id);
+            self.close_position(id);
+        }
+
         Ok(())
     }
 

@@ -1,4 +1,3 @@
-#[derive(Debug)]
 pub enum EngineEvent {
-    PriceUpdate(f64),
+    PriceUpdate(rust_decimal::Decimal), 
 }
