@@ -28,8 +28,9 @@ perp-engine/
 
 **Backend**
 - Rust
+- Actix Web
 - Tokio
-- WebSockets
+- tokio-tungstenite (WebSocket client)
 
 **Frontend**
 - Next.js
