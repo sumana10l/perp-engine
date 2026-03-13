@@ -1,19 +1,18 @@
 # Perp Engine (Rust)
 
-A minimal **event-driven perpetual trading backend** written in Rust.
-
-The engine simulates core exchange mechanics including margin trading,
-leverage, position management, and real-time PnL updates using live
-market data from Binance.
+A minimal event-driven perpetual trading engine written in Rust that
+simulates the core mechanics of a perpetual derivatives exchange.
 
 ---
 
 # Features
 
 - Open leveraged positions
-- Long / Short support
+- Long / Short trading
 - Real-time PnL updates
+- Position liquidation price calculation
 - Close positions
+- Trade history tracking
 - Event-driven trading engine
 - Live price feed from Binance WebSocket
 - REST API using Actix Web
@@ -113,20 +112,75 @@ GET /positions
 POST /position/close
 ```
 
----
+### Get Current Price
+```
+GET /price
+```
 
+### Get Balance
+```
+GET /balance
+```
+
+### Get Trade History
+```
+GET /trade-history
+```
+
+---
+# Engine Logic
+```
+Position size:
+
+position_size = margin * leverage
+
+Quantity:
+
+quantity = position_size / entry_price
+
+PnL calculation:
+
+Long:
+pnl = (current_price - entry_price) * quantity
+
+Short:
+pnl = (entry_price - current_price) * quantity
+
+Liquidation price:
+
+Long:
+liq = entry_price * (1 - 1/leverage)
+
+Short:
+liq = entry_price * (1 + 1/leverage)
+```
 # Example Request
 
 Open a long position:
 
-```json
 POST /position/open
 
+```json
 {
   "asset": "SOL",
   "margin": 100,
   "leverage": 5,
   "position_type": "Long"
+}
+```
+Response :
+
+```json
+{
+  "id": "590682d4-d1a3-4cfa-893e-5f5eb8c8533c",
+  "asset": "SOL",
+  "entry_price": 89.35,
+  "quantity": 5.59,
+  "margin": 100,
+  "leverage": 5,
+  "pnl": 0.50,
+  "position_type": "Long",
+  "liquidation_price": 71.48
 }
 ```
 

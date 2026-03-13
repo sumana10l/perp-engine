@@ -27,12 +27,6 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-12 gap-6 mt-8">
-        <div className="col-span-4">
-          <div className="bg-gray-800 rounded-xl shadow p-4 sticky top-10">
-            <OpenPositionForm balance={balance} price={price} />
-          </div>
-        </div>
-
         <div className="col-span-8 flex flex-col">
           <div className="bg-gray-800 rounded-xl shadow p-4">
             <TradeChart price={price} />
@@ -70,6 +64,11 @@ export default function Home() {
                 <TradeHistoryTable />
               </div>
             )}
+          </div>
+        </div>
+        <div className="col-span-4">
+          <div className="bg-gray-800 rounded-xl shadow p-4 sticky top-10">
+            <OpenPositionForm balance={balance} price={price} />
           </div>
         </div>
       </div>

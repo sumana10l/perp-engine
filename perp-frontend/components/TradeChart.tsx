@@ -25,9 +25,18 @@ export default function TradeChart({ price }: { price: number }) {
       height: 500,
       layout: { background: { color: "#1e1e2f" }, textColor: "#d1d4dc" },
       grid: { vertLines: { color: "#2a2e42" }, horzLines: { color: "#2a2e42" } },
+      rightPriceScale: {
+        autoScale: true,
+        borderColor: "#2a2e42",
+        visible: true,
+      },
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
+        barSpacing: 15,
+        rightOffset: 10,
+        fixLeftEdge: false,
+        lockVisibleTimeRangeOnResize: true,
         tickMarkFormatter: (time: number) => {
           const date = new Date(time * 1000);
           return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -40,16 +49,30 @@ export default function TradeChart({ price }: { price: number }) {
       downColor: "#ef5350",
       wickUpColor: "#26a69a",
       wickDownColor: "#ef5350",
+      borderVisible: true,
+      borderUpColor: "#26a69a",
+      borderDownColor: "#ef5350",
     });
 
-    const history = generateHistory(price || 86.5, 20);
+    const initialPrice = price > 0 ? price : 88.25;
+    const history = generateHistory(initialPrice, 50);
     candlesRef.current = history;
     candleSeries.setData(history);
 
     chartRef.current = chart;
     candleSeriesRef.current = candleSeries;
 
-    return () => chart.remove();
+    const handleResize = () => {
+      if (containerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
+      }
+    };
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      chart.remove();
+    };
   }, []);
 
   useEffect(() => {
@@ -80,10 +103,10 @@ export default function TradeChart({ price }: { price: number }) {
     }
 
     candleSeriesRef.current.update(currentCandle);
-
-    if (candlesRef.current.length < 5) {
-      chartRef.current?.timeScale().fitContent();
+    if (chartRef.current) {
+      chartRef.current.timeScale().scrollToPosition(0, true);
     }
+
   }, [price]);
 
   return (

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getPrice, getBalance } from "../services/api";
 
 type MarketInfoProps = {
@@ -18,24 +18,40 @@ export default function MarketInfo({
   setBalance,
 }: MarketInfoProps) {
 
-  const fetchData = async () => {
-    try {
-      const priceData = await getPrice();
-      const balanceData = await getBalance();
-
-      setPrice(priceData.price);
-      setBalance(balanceData.balance);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
+  const [startPrice, setStartPrice] = useState<number | null>(null);
+  const [high, setHigh] = useState<number | null>(null);
+  const [low, setLow] = useState<number | null>(null);
   useEffect(() => {
-    fetchData();
+    const fetchData = async () => {
+      try {
+        const priceData = await getPrice();
+        const balanceData = await getBalance();
+        const newPrice = priceData.price;
+        setStartPrice((prev) => {
+          if (prev === null && newPrice > 0) return newPrice;
+          return prev;
+        });
+        setPrice(newPrice);
+        setBalance(balanceData.balance);
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
+    fetchData();
     const interval = setInterval(fetchData, 2000);
     return () => clearInterval(interval);
   }, []);
+
+  const priceChange = startPrice ? price - startPrice : 0;
+  const pricePercent = startPrice ? (priceChange / startPrice) * 100 : 0;
+
+
+  useEffect(() => {
+    if (price <= 0) return;
+    if (high === null || price > high) setHigh(price);
+    if (low === null || price < low) setLow(price);
+  }, [price]);
 
   return (
     <div className="flex justify-between items-center bg-gray-900 text-white p-3 rounded-lg shadow mb-2 text-sm font-semibold">
@@ -46,31 +62,22 @@ export default function MarketInfo({
 
       <div className="flex flex-col items-center min-w-[100px]">
         <span className="text-lg font-bold">{price.toFixed(2)}</span>
-        <span className="text-xs font-normal text-gray-400">Index Price 85.99</span>
+        <span className="text-xs font-normal text-gray-400">Index Price {price.toFixed(2)}</span>
       </div>
 
-      <div className="text-green-400 min-w-[100px]">
-        +0.81 +0.95%
+      <div className={`min-w-[100px] ${priceChange >= 0 ? "text-green-400" : "text-red-400"}`}>
+        {priceChange >= 0 ? "+" : ""}{priceChange.toFixed(2)} ({pricePercent.toFixed(2)}%)
       </div>
-
-      <div className="min-w-[140px] text-yellow-500">
-        -0.0002% / 00:38:48
+      <div className="min-w-[70px] text-gray-300">
+        High: {high ? high.toFixed(2) : "-"}
       </div>
 
       <div className="min-w-[70px] text-gray-300">
-        88.09
-      </div>
-
-      <div className="min-w-[70px] text-gray-300">
-        84.33
-      </div>
-
-      <div className="min-w-[140px] text-gray-300">
-        77,932,723.51
+        Low: {low ? low.toFixed(2) : "-"}
       </div>
 
       <div className="min-w-[120px] text-gray-300">
-        479,605.88
+        27,343,333.62
       </div>
 
       <div className="min-w-[110px] text-white font-bold">
