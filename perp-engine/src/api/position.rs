@@ -52,27 +52,21 @@ pub async fn close_position(
         None => HttpResponse::NotFound().body("Position not found"),
     }
 }
-pub async fn get_price(
-    data: web::Data<Arc<Mutex<Engine>>>,
-) -> HttpResponse {
+pub async fn get_price(data: web::Data<Arc<Mutex<Engine>>>) -> HttpResponse {
     let engine = data.lock().unwrap();
 
     HttpResponse::Ok().json(serde_json::json!({
         "price": engine.current_price
     }))
 }
-pub async fn get_balance(
-    data: web::Data<Arc<Mutex<Engine>>>,
-) -> HttpResponse {
+pub async fn get_balance(data: web::Data<Arc<Mutex<Engine>>>) -> HttpResponse {
     let engine = data.lock().unwrap();
 
     HttpResponse::Ok().json(serde_json::json!({
         "balance": engine.balance
     }))
 }
-pub async fn get_trade_history(
-    data: web::Data<Arc<Mutex<Engine>>>,
-) -> HttpResponse {
+pub async fn get_trade_history(data: web::Data<Arc<Mutex<Engine>>>) -> HttpResponse {
     let engine = data.lock().unwrap();
 
     HttpResponse::Ok().json(&engine.trade_history)

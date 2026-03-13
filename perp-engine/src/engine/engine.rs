@@ -92,21 +92,17 @@ impl Engine {
 
     pub fn close_position(&mut self, position_id: Uuid) -> Option<Position> {
         if let Some(position) = self.positions.remove(&position_id) {
-    
             let trade = Trade {
                 entry: position.entry_price,
                 exit: self.current_price,
                 pnl: position.pnl,
-                position_type: match position.position_type {
-                    PositionType::Long => "Long".to_string(),
-                    PositionType::Short => "Short".to_string(),
-                },
+                position_type: position.position_type.clone(),
             };
-    
+
             self.trade_history.push(trade);
-    
+
             self.balance += position.margin + position.pnl;
-    
+
             Some(position)
         } else {
             None

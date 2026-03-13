@@ -2,6 +2,10 @@
 
 BASE_URL="http://127.0.0.1:8080"
 
+echo ""
+echo "Testing Perp Engine API"
+echo ""
+
 echo "---------------------------------"
 echo "1️⃣ Opening position"
 echo "---------------------------------"
@@ -35,7 +39,7 @@ echo "---------------------------------"
 echo "3️⃣ Waiting for market movement..."
 echo "---------------------------------"
 
-sleep 5
+sleep 15
 
 echo "---------------------------------"
 echo "4️⃣ Checking positions after market move"
@@ -59,6 +63,27 @@ echo "6️⃣ Final positions state"
 echo "---------------------------------"
 
 curl -s $BASE_URL/positions
+echo -e "\n"
+
+echo "---------------------------------"
+echo "7️⃣ Checking price feed"
+echo "---------------------------------"
+
+curl -s $BASE_URL/price
+echo -e "\n"
+
+echo "---------------------------------"
+echo " 8️⃣ Checking balance"
+echo "---------------------------------"
+
+curl -s $BASE_URL/balance
+echo -e "\n"
+
+echo "---------------------------------"
+echo " 9️⃣ Checking Trade history"
+echo "---------------------------------"
+
+curl -s $BASE_URL/trade-history
 echo -e "\n"
 
 echo "---------------------------------"

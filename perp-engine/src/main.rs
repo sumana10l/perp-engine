@@ -4,16 +4,16 @@ mod api;
 mod engine;
 mod market;
 use crate::api::position::close_position;
+use crate::api::position::get_balance;
 use crate::api::position::get_positions;
+use crate::api::position::get_price;
+use crate::api::position::get_trade_history;
 use crate::api::position::open_position;
 use crate::engine::engine::Engine;
 use crate::engine::event::EngineEvent;
 use crate::market::ws::start_price_feed;
 use actix_cors::Cors;
 use tokio::sync::mpsc;
-use crate::api::position::get_price;
-use crate::api::position::get_balance;
-use crate::api::position::get_trade_history;
 #[actix_web::main]
 
 async fn main() -> std::io::Result<()> {
