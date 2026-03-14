@@ -4,7 +4,7 @@ A high-performance, event-driven perpetual trading engine written in **Rust**. T
 
 ---
 
-## 🏗 Key Engineering Highlights
+## Key Engineering Highlights
 
 - **Fixed-Point Precision:** Implements `rust_decimal` across the entire stack. This eliminates binary floating-point rounding errors (common in `f64`), ensuring financial integrity for balance and PnL calculations.
 
@@ -18,7 +18,7 @@ A high-performance, event-driven perpetual trading engine written in **Rust**. T
 
 ---
 
-## 📐 Engine Logic & Math
+## Engine Logic & Math
 
 The engine enforces strict financial rules to maintain exchange solvency.
 
@@ -42,7 +42,7 @@ Liquidations occur automatically when the mark price crosses the threshold where
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Component | Technology |
 |-----------|------------|
@@ -55,7 +55,7 @@ Liquidations occur automatically when the mark price crosses the threshold where
 
 ---
 
-## 🚦 API Reference
+## API Reference
 
 ### Positions
 
@@ -99,7 +99,7 @@ src/
 
 ---
 
-## 🧪 Testing the Engine
+## Testing the Engine
 
 To verify the full trade lifecycle (Open → Price Move → PnL Check → Close):
 

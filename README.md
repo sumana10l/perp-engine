@@ -4,17 +4,17 @@ A full-stack, real-time perpetual futures trading platform. This project combine
 
 ---
 
-## ✨ Project Overview
+## Project Overview
 
 This platform is designed to handle the high-concurrency and high-precision requirements of financial trading. It features a custom-built risk engine that processes live market data from Binance to manage leveraged positions and liquidations.
 
-### 🎥 Dashboard Preview
+### Dashboard Preview
 
 ![Trading Dashboard](./screenshots/dashboard.png)
 
 ---
 
-## 🏗 System Architecture
+## System Architecture
 
 The project is split into specialized components to ensure low-latency data processing and a smooth user experience.
 
@@ -32,7 +32,7 @@ The project is split into specialized components to ensure low-latency data proc
 
 ---
 
-## ⚙️ Core Mechanics
+## Core Mechanics
 
 - **Leveraged Trading:** Supports **5x–50x leverage** with real-time margin validation.
 - **Auto-Liquidation:** Positions are automatically closed if the mark price hits the calculated liquidation threshold.
@@ -41,7 +41,7 @@ The project is split into specialized components to ensure low-latency data proc
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Domain | Technology |
 |------|-------------|
@@ -62,7 +62,7 @@ perp-engine/
 
 ---
 
-## 🚀 Running the Project
+## Running the Project
 
 ### 1. Start the Backend
 
@@ -99,7 +99,7 @@ to access the trading dashboard.
 
 ---
 
-## 🧪 Automated Testing
+## Automated Testing
 
 The backend includes a test script to verify the trading lifecycle.
 
