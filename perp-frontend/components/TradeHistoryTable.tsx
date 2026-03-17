@@ -40,21 +40,21 @@ export default function TradeHistoryTable() {
           <tbody>
             {trades.map((t, i) => (
               <tr key={i} className="border-t border-gray-700 hover:bg-gray-800">
-                <td className="py-2">{t.entry.toFixed(2)}</td>
-                <td className="py-2">{t.exit.toFixed(2)}</td>
+                <td className="py-2">{t.entry.toFixed(4)}</td>
+                <td className="py-2">{t.exit.toFixed(4)}</td>
 
                 <td
                   className={`py-2 font-semibold ${t.pnl >= 0 ? "text-green-400" : "text-red-400"
                     }`}
                 >
-                  {t.pnl.toFixed(2)}
+                  {t.pnl > 0 ? "+" : ""}{t.pnl.toFixed(4)}
                 </td>
 
                 <td className="py-2">
                   <span
                     className={`px-3 py-1 rounded-md font-medium ${t.position_type === "Long"
-                        ? "bg-green-800 text-green-400"
-                        : "bg-red-800 text-red-400"
+                      ? "bg-green-800 text-green-400"
+                      : "bg-red-800 text-red-400"
                       }`}
                   >
                     {t.position_type}

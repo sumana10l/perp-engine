@@ -23,23 +23,31 @@ export default function TradeChart({ price }: { price: number }) {
     const chart = createChart(containerRef.current, {
       width: containerRef.current.clientWidth,
       height: 500,
-      layout: { background: { color: "#1e1e2f" }, textColor: "#d1d4dc" },
-      grid: { vertLines: { color: "#2a2e42" }, horzLines: { color: "#2a2e42" } },
+      layout: {
+        background: { color: "#1e1e2f" },
+        textColor: "#d1d4dc"
+      },
+      grid: {
+        vertLines: { color: "#2a2e42" },
+        horzLines: { color: "#2a2e42" }
+      },
       rightPriceScale: {
         autoScale: true,
         borderColor: "#2a2e42",
         visible: true,
       },
+
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
         barSpacing: 15,
-        rightOffset: 10,
-        fixLeftEdge: false,
-        lockVisibleTimeRangeOnResize: true,
         tickMarkFormatter: (time: number) => {
           const date = new Date(time * 1000);
-          return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          return date.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          });
         },
       },
     });
@@ -54,10 +62,11 @@ export default function TradeChart({ price }: { price: number }) {
       borderDownColor: "#ef5350",
     });
 
-    const initialPrice = price > 0 ? price : 88.25;
-    const history = generateHistory(initialPrice, 50);
-    candlesRef.current = history;
-    candleSeries.setData(history);
+    if (price > 0) {
+      const history = generateHistory(price, 50);
+      candlesRef.current = history;
+      candleSeries.setData(history);
+    }
 
     chartRef.current = chart;
     candleSeriesRef.current = candleSeries;
@@ -73,13 +82,15 @@ export default function TradeChart({ price }: { price: number }) {
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, []);
+
+  }, [price === 0]);
 
   useEffect(() => {
-    if (!candleSeriesRef.current || !price) return;
+    if (!candleSeriesRef.current || !price || price <= 0) return;
 
     const now = (Math.floor(Date.now() / 60000) * 60) as UTCTimestamp;
-    const lastCandle = candlesRef.current[candlesRef.current.length - 1];
+    const currentHistory = candlesRef.current;
+    const lastCandle = currentHistory[currentHistory.length - 1];
 
     let currentCandle: Candle;
 
@@ -103,8 +114,9 @@ export default function TradeChart({ price }: { price: number }) {
     }
 
     candleSeriesRef.current.update(currentCandle);
+
     if (chartRef.current) {
-      chartRef.current.timeScale().scrollToPosition(0, true);
+      chartRef.current.timeScale().scrollToRealTime();
     }
 
   }, [price]);
@@ -119,18 +131,21 @@ export default function TradeChart({ price }: { price: number }) {
 
 const generateHistory = (currentPrice: number, count: number): Candle[] => {
   const history: Candle[] = [];
-  const now = Math.floor(Date.now() / 1000);
-  const roundedNow = Math.floor(now / 60) * 60;
+  const nowInSeconds = Math.floor(Date.now() / 1000);
+  const roundedNow = Math.floor(nowInSeconds / 60) * 60;
+  let lastClose = currentPrice;
 
   for (let i = count; i > 0; i--) {
     const time = (roundedNow - i * 60) as UTCTimestamp;
-    history.push({
-      time,
-      open: currentPrice,
-      high: currentPrice,
-      low: currentPrice,
-      close: currentPrice,
-    });
+
+    const move = (Math.random() - 0.5) * 0.15;
+    const open = lastClose;
+    const close = open + move;
+    const high = Math.max(open, close) + Math.random() * 0.05;
+    const low = Math.min(open, close) - Math.random() * 0.05;
+
+    history.push({ time, open, high, low, close });
+    lastClose = close;
   }
   return history;
 };

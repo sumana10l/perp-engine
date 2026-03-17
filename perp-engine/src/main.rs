@@ -5,6 +5,7 @@ mod engine;
 mod market;
 use crate::api::position::close_position;
 use crate::api::position::get_balance;
+use crate::api::position::get_funding_rate;
 use crate::api::position::get_positions;
 use crate::api::position::get_price;
 use crate::api::position::get_trade_history;
@@ -12,6 +13,7 @@ use crate::api::position::open_position;
 use crate::engine::engine::Engine;
 use crate::engine::event::EngineEvent;
 use crate::market::ws::start_price_feed;
+
 use actix_cors::Cors;
 use tokio::sync::mpsc;
 #[actix_web::main]
@@ -38,6 +40,17 @@ async fn main() -> std::io::Result<()> {
             }
         }
     });
+    let engine_for_funding = engine.clone();
+
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
+
+        loop {
+            interval.tick().await;
+            let mut engine = engine_for_funding.lock().unwrap();
+            engine.apply_funding();
+        }
+    });
 
     HttpServer::new(move || {
         App::new()
@@ -54,6 +67,7 @@ async fn main() -> std::io::Result<()> {
             .route("/price", web::get().to(get_price))
             .route("/balance", web::get().to(get_balance))
             .route("/trade-history", web::get().to(get_trade_history))
+            .route("/funding-rate", web::get().to(get_funding_rate))
     })
     .bind(("127.0.0.1", 8080))?
     .run()

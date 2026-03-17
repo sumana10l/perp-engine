@@ -87,5 +87,11 @@ curl -s $BASE_URL/trade-history
 echo -e "\n"
 
 echo "---------------------------------"
+echo " 🔟 Checking Funding Rate"
+echo "---------------------------------"
+curl -s $BASE_URL/funding-rate
+echo -e "\n"
+
+echo "---------------------------------"
 echo "✅ Test Complete"
 echo "---------------------------------"

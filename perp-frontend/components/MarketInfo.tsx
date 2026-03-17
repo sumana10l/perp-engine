@@ -21,12 +21,15 @@ export default function MarketInfo({
   const [startPrice, setStartPrice] = useState<number | null>(null);
   const [high, setHigh] = useState<number | null>(null);
   const [low, setLow] = useState<number | null>(null);
+  const [markPrice, setMarkPrice] = useState<number | null>(null);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const priceData = await getPrice();
         const balanceData = await getBalance();
-        const newPrice = priceData.price;
+        const newPrice = priceData.current_price;
+        setMarkPrice(priceData.mark_price);
         setStartPrice((prev) => {
           if (prev === null && newPrice > 0) return newPrice;
           return prev;
@@ -62,7 +65,9 @@ export default function MarketInfo({
 
       <div className="flex flex-col items-center min-w-[100px]">
         <span className="text-lg font-bold">{price.toFixed(2)}</span>
-        <span className="text-xs font-normal text-gray-400">Index Price {price.toFixed(2)}</span>
+        <span className="text-[10px] font-normal text-yellow-500 uppercase">
+        Mark: {(markPrice ?? 0).toFixed(2)}
+        </span>
       </div>
 
       <div className={`min-w-[100px] ${priceChange >= 0 ? "text-green-400" : "text-red-400"}`}>

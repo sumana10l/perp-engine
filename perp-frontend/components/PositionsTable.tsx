@@ -46,15 +46,15 @@ export default function PositionsTable() {
             {positions.map((p: any) => (
               <tr key={p.id} className="border-t border-gray-700 hover:bg-gray-700">
                 <td className="px-3 py-2">{p.id.slice(0, 8)}</td>
-                <td className="px-3 py-2">{p.entry_price.toFixed(2)}</td>
-                <td className="px-3 py-2">{(p.margin * p.leverage).toFixed(2)}</td>
+                <td className="px-3 py-2">{p.entry_price.toFixed(4)}</td>
+                <td className="px-3 py-2">{p.quantity.toFixed(3)}</td>
                 <td className="px-3 py-2">{p.margin.toFixed(2)}</td>
                 <td className="px-3 py-2">{p.leverage}x</td>
                 <td
                   className={`px-3 py-2 font-semibold ${p.pnl >= 0 ? "text-green-400" : "text-red-500"
                     }`}
                 >
-                  {p.pnl.toFixed(2)}
+                  {p.pnl > 0 ? "+" : ""}{p.pnl.toFixed(4)}
                 </td>
                 <td className="px-3 py-2">
                   <span
