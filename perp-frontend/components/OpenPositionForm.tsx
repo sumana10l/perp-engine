@@ -35,8 +35,8 @@ export default function OpenPositionForm({ balance, price }: Props) {
     try {
       await openPosition({
         asset: "SOL",
-        margin,
-        leverage,
+        margin: Number(margin),
+        leverage: Number(leverage),
         position_type: type
       });
 

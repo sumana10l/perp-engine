@@ -7,8 +7,12 @@ export default function PositionsTable() {
   const [positions, setPositions] = useState<any[]>([]);
 
   const loadPositions = async () => {
-    const data = await getPositions();
-    setPositions(Object.values(data));
+    try {
+      const data = await getPositions();
+      setPositions(data.positions || []);
+    } catch (error) {
+      console.error("Error loading positions:", error);
+    }
   };
 
   useEffect(() => {
@@ -43,50 +47,40 @@ export default function PositionsTable() {
             </tr>
           </thead>
           <tbody>
-            {positions.map((p: any) => (
-              <tr key={p.id} className="border-t border-gray-700 hover:bg-gray-700">
-                <td className="px-3 py-2">{p.id.slice(0, 8)}</td>
-                <td className="px-3 py-2">{p.entry_price.toFixed(4)}</td>
-                <td className="px-3 py-2">{p.quantity.toFixed(3)}</td>
-                <td className="px-3 py-2">{p.margin.toFixed(2)}</td>
-                <td className="px-3 py-2">{p.leverage}x</td>
-                <td
-                  className={`px-3 py-2 font-semibold ${p.pnl >= 0 ? "text-green-400" : "text-red-500"
-                    }`}
-                >
-                  {p.pnl > 0 ? "+" : ""}{p.pnl.toFixed(4)}
-                </td>
-                <td className="px-3 py-2">
-                  <span
-                    className={`px-2 py-1 rounded-md font-medium ${p.position_type === "Long"
-                      ? "bg-green-800 text-green-300"
-                      : "bg-red-800 text-red-300"
-                      }`}
-                  >
-                    {p.position_type}
-                  </span>
-                </td>
-                <td className="px-3 py-2">
-                  <span
-                    className={`px-2 py-1 rounded-md font-medium ${p.position_type === "Long"
-                      ? "bg-red-800 text-red-300"
-                      : "bg-green-800 text-green-300"
-                      }`}
-                  >
-                    {p.liquidation_price.toFixed(2)}
-                  </span>
-                </td>
+            {positions.map((p: any) => {
+              const shortId = p.id ? String(p.id).slice(0, 8) : "N/A";
 
-                <td className="px-3 py-2">
-                  <button
-                    onClick={() => handleClose(p.id)}
-                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm"
-                  >
-                    Close
-                  </button>
-                </td>
-              </tr>
-            ))}
+              return (
+                <tr key={p.id} className="border-t border-gray-700 hover:bg-gray-700">
+                  <td className="px-3 py-2 font-mono text-xs text-gray-500">{shortId}</td>
+                  <td className="px-3 py-2">{(p.entry_price ?? 0).toFixed(2)}</td>
+                  <td className="px-3 py-2">{(p.quantity ?? 0).toFixed(4)}</td>
+                  <td className="px-3 py-2">{(p.margin ?? 0).toFixed(2)}</td>
+                  <td className="px-3 py-2">{p.leverage}x</td>
+                  <td className={`px-3 py-2 font-semibold ${(p.pnl ?? 0) >= 0 ? "text-green-400" : "text-red-500"}`}>
+                    {(p.pnl ?? 0) > 0 ? "+" : ""}{(p.pnl ?? 0).toFixed(4)}
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className={`px-2 py-1 rounded-md font-medium ${p.position_type === "Long" ? "bg-green-800 text-green-300" : "bg-red-800 text-red-300"}`}>
+                      {p.position_type}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className="text-orange-400 font-medium">
+                      {(p.liquidation_price ?? 0).toFixed(2)}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2">
+                    <button
+                      onClick={() => handleClose(p.id)}
+                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm transition-colors"
+                    >
+                      Close
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

@@ -1,119 +1,80 @@
 # 🦀 Perp Engine (Backend)
 
-A high-performance, event-driven perpetual trading engine written in **Rust**. This system simulates the core mechanics of a perpetual derivatives exchange, handling real-time risk management, position state transitions, and live market data synchronization.
+A high-performance perpetual trading engine in Rust with real-time risk management and live market data.
 
 ---
 
-## Key Engineering Highlights
+## Key Features
 
-- **Fixed-Point Precision:** Implements `rust_decimal` across the entire stack. This eliminates binary floating-point rounding errors (common in `f64`), ensuring financial integrity for balance and PnL calculations.
-
-- **Event-Driven Concurrency:** Utilizes `tokio` MPSC channels to decouple the high-frequency market data feed from the core trading logic.
-
-- **Panic-Resilient Architecture:**
-  - **Safe Mutexes:** Uses pattern matching on `data.lock()` to handle potential Mutex poisoning gracefully without crashing the API thread.
-  - **Resilient WebSockets:** Features a non-blocking reconnection loop that automatically recovers the Binance price feed during network interruptions.
-
-- **Real-Time Risk Monitoring:** The engine evaluates every incoming price tick to trigger automated liquidations and update unrealized PnL.
-
----
-
-## Engine Logic & Math
-
-The engine enforces strict financial rules to maintain exchange solvency.
-
-### 1. Liquidation Logic
-
-Liquidations occur automatically when the mark price crosses the threshold where the user's collateral (margin) would be exhausted based on their leverage.
-
-- **Long:**  
-  `Price_liq = Price_entry × (1 - 1 / Leverage)`
-
-- **Short:**  
-  `Price_liq = Price_entry × (1 + 1 / Leverage)`
-
-### 2. PnL Calculation
-
-- **Long:**  
-  `PnL = (Price_current - Price_entry) × Quantity`
-
-- **Short:**  
-  `PnL = (Price_entry - Price_current) × Quantity`
+- **Non-Blocking Async:** `RwLock` for concurrent reads, proper `.await` handling
+- **Fixed-Point Math:** `rust_decimal` eliminates floating-point errors
+- **Resilient WebSocket:** Exponential backoff reconnection to Binance price feed
+- **Graceful Shutdown:** Clean signal handling and resource cleanup
+- **Real-Time Liquidation:** Automatic position liquidation at maintenance threshold
+- **Proper Error Handling:** All errors logged with `tracing`, no silent failures
 
 ---
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| **Language** | Rust (Edition 2021) |
-| **Async Runtime** | tokio |
-| **Web Framework** | actix-web |
-| **Numeric Type** | rust_decimal (fixed-point arithmetic) |
-| **Serialization** | serde / serde_json |
-| **WebSocket** | tokio-tungstenite |
+- **Runtime:** Tokio async
+- **Framework:** Actix-web
+- **Concurrency:** `tokio::sync::RwLock`
+- **Math:** rust_decimal (fixed-point)
+- **Logging:** tracing / tracing-subscriber
+- **WebSocket:** tokio-tungstenite
 
 ---
 
-## API Reference
+## API Endpoints
 
-### Positions
-
-- `POST /position/open`  
-  Opens a new Long/Short position and validates margin against current balance.
-
-- `GET /positions`  
-  Returns all active positions.
-
-- `POST /position/close`  
-  Realizes PnL, settles the balance, and moves the position to trade history.
-
-### Market & Wallet
-
-- `GET /price`  
-  Returns the current live index price (SOL/USDT).
-
-- `GET /balance`  
-  Returns the user's available collateral balance.
-
-- `GET /trade-history`  
-  Returns a list of all settled (closed or liquidated) trades.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/position/open` | Open new position |
+| GET | `/positions` | List all positions |
+| POST | `/position/close` | Close position |
+| GET | `/price` | Current price & mark price |
+| GET | `/balance` | Balance & total equity |
+| GET | `/funding-rate` | Funding rate info |
+| GET | `/trade-history` | Closed trades |
+| GET | `/health` | Health check |
 
 ---
 
-## 📂 Project Structure
-
-```text
-src/
-├─ engine/
-│  ├─ engine.rs     # Core state machine & liquidation logic
-│  ├─ position.rs   # Position data models (Decimal-based)
-│  ├─ trade.rs      # Trade history models
-│  └─ event.rs      # MPSC event definitions
-├─ api/
-│  └─ position.rs   # Actix-web route handlers & safe locking
-├─ market/
-│  └─ ws.rs         # Resilient Binance WebSocket client
-└─ main.rs          # App entry point & background worker loop
-```
-
----
-
-## Testing the Engine
-
-To verify the full trade lifecycle (Open → Price Move → PnL Check → Close):
-
-### 1. Start the Engine
-
+## Quick Start
 ```bash
+# Start engine
 cargo run
+
+# Server runs on http://localhost:8080
 ```
 
-### 2. Execute the Automated Test Suite
-
+## Testing
 ```bash
+# Run automated test suite
 chmod +x test_engine.sh
 ./test_engine.sh
 ```
 
-The test script simulates trading operations to ensure the engine correctly processes positions, updates PnL, and handles closures.
+Tests verify: position creation, price updates, PnL calculations, liquidations, and position closure.
+
+---
+
+## Project Structure
+```
+src/
+├─ engine/          # Core trading logic
+│  ├─ engine.rs     # Main state machine
+│  ├─ position.rs   # Position data models
+│  ├─ trade.rs      # Trade records
+│  └─ event.rs      # Event types
+├─ api/
+│  ├─ position.rs   # Actix-web handlers with RwLock async access
+│  └─ mod.rs        # Module exports
+├─ market/
+│  ├─ ws.rs         # Resilient Binance WebSocket with exponential backoff
+│  └─ mod.rs        # Module exports
+└─ main.rs          # Server entry point
+```
+
+---

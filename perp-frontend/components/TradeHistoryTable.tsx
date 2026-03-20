@@ -9,9 +9,10 @@ export default function TradeHistoryTable() {
   const loadTrades = async () => {
     try {
       const data = await getTradeHistory();
-      setTrades(data);
+      setTrades(data.trades || []);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to load trades:", err);
+      setTrades([]);
     }
   };
 
@@ -38,7 +39,7 @@ export default function TradeHistoryTable() {
           </thead>
 
           <tbody>
-            {trades.map((t, i) => (
+            {(trades || []).map((t, i) => (
               <tr key={i} className="border-t border-gray-700 hover:bg-gray-800">
                 <td className="py-2">{t.entry.toFixed(4)}</td>
                 <td className="py-2">{t.exit.toFixed(4)}</td>

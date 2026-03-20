@@ -20,7 +20,11 @@ export async function openPosition(data: {
         body: JSON.stringify(data),
     });
 
-    if (!res.ok) throw new Error("Failed to open position");
+    if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Server Error:", errorText);
+        throw new Error(`Failed to open position: ${errorText}`);
+    }
     return res.json();
 }
 
@@ -54,10 +58,10 @@ export async function getBalance() {
 }
 export const getTradeHistory = async () => {
     const res = await fetch(`${API_BASE}/trade-history`);
-  
+
     if (!res.ok) {
-      throw new Error("Failed to fetch trade history");
+        throw new Error("Failed to fetch trade history");
     }
-  
+
     return res.json();
-  };
+};

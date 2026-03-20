@@ -1,110 +1,82 @@
 # 📈 Perp Engine
 
-A full-stack, real-time perpetual futures trading platform. This project combines a high-performance **Rust** trading engine with a reactive **Next.js** dashboard to simulate a professional derivatives exchange.
+A full-stack perpetual futures trading platform. Rust backend with real-time risk management + Next.js frontend dashboard.
 
 ---
 
-## Project Overview
+## Overview
 
-This platform is designed to handle the high-concurrency and high-precision requirements of financial trading. It features a custom-built risk engine that processes live market data from Binance to manage leveraged positions and liquidations.
-
-### Dashboard Preview
-
-![Trading Dashboard](./screenshots/dashboard.png)
+- **Backend (Rust):** High-performance trading engine with live Binance price feed
+- **Frontend (Next.js):** Real-time trading dashboard with position management
+- **Architecture:** Event-driven, non-blocking async with fixed-point math
 
 ---
 
-## System Architecture
+## Quick Start
 
-The project is split into specialized components to ensure low-latency data processing and a smooth user experience.
+### Backend
+```bash
+cd backend
+cargo run
+# Server: http://localhost:8080
+```
 
-1. **Market Worker (Rust):**  
-   An asynchronous worker that maintains a persistent WebSocket connection to Binance, streaming live SOL/USDT trades.
-
-2. **Risk Engine (Rust):**  
-   A state machine that utilizes fixed-point arithmetic (`rust_decimal`) to calculate PnL and trigger auto-liquidations.
-
-3. **API Layer (Actix-Web):**  
-   A thread-safe REST API that exposes engine state via protected shared memory.
-
-4. **Trading Dashboard (Next.js):**  
-   A professional-grade UI featuring real-time price charts and position management.
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+# Dashboard: http://localhost:3000
+```
 
 ---
 
-## Core Mechanics
+## Core Features
 
-- **Leveraged Trading:** Supports **5x–50x leverage** with real-time margin validation.
-- **Auto-Liquidation:** Positions are automatically closed if the mark price hits the calculated liquidation threshold.
-- **High Precision:** Zero floating-point errors using `Decimal` types for financial calculations.
-- **Event-Driven:** Decoupled architecture using **MPSC channels** for non-blocking state updates.
+- **Leveraged Trading:** 1x–100x leverage with real-time validation
+- **Auto-Liquidation:** Positions close at maintenance margin threshold
+- **Fixed-Point Math:** `rust_decimal` for zero floating-point errors
+- **Live Prices:** Real-time WebSocket feed from Binance
+- **Risk Engine:** State machine with concurrent position management
 
 ---
 
 ## Tech Stack
 
-| Domain | Technology |
-|------|-------------|
-| **Backend** | Rust, Actix-Web, Tokio, WebSockets, rust_decimal |
-| **Frontend** | Next.js, React, TypeScript, Tailwind CSS |
-| **DevOps** | Docker (optional), Shell scripting for automated testing |
+| Component | Technology |
+|-----------|------------|
+| Backend | Rust, Actix-Web, Tokio, RwLock |
+| Frontend | Next.js, React, TypeScript, Tailwind |
+| Math | rust_decimal (fixed-point) |
+| WebSocket | tokio-tungstenite (Binance) |
 
 ---
 
-## 📂 Repository Structure
-
-```text
-perp-engine/
-├─ backend/     # Rust trading engine & REST API
-├─ frontend/    # Next.js trading dashboard
-└─ README.md    # Project documentation
-```
-
----
-
-## Running the Project
-
-### 1. Start the Backend
-
-```bash
-cd backend
-cargo run
-```
-
-The server will start on:
-
-```
-http://127.0.0.1:8080
-```
-
-The engine will begin streaming live prices.
-
----
-
-### 2. Start the Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open:
-
-```
-http://localhost:3000
-```
-
-to access the trading dashboard.
-
----
-
-## Automated Testing
-
-The backend includes a test script to verify the trading lifecycle.
-
+## Testing
 ```bash
 cd backend
 ./test_engine.sh
 ```
 
+Verifies: position creation, price updates, PnL calculations, liquidations.
+
+---
+
+## Project Structure
+```
+perp-engine/
+├─ backend/
+│  ├─ src/
+│  │  ├─ engine/      # Trading logic
+│  │  ├─ api/         # HTTP handlers
+│  │  ├─ market/      # WebSocket feed
+│  │  └─ main.rs      # Server entry
+│  └─ Cargo.toml
+├─ frontend/
+│  ├─ components/     # React components
+│  ├─ services/       # API client
+│  └─ package.json
+└─ README.md
+```
+
+---

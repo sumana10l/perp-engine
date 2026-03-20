@@ -66,7 +66,7 @@ export default function MarketInfo({
       <div className="flex flex-col items-center min-w-[100px]">
         <span className="text-lg font-bold">{price.toFixed(2)}</span>
         <span className="text-[10px] font-normal text-yellow-500 uppercase">
-        Mark: {(markPrice ?? 0).toFixed(2)}
+          Mark: {(markPrice ?? 0).toFixed(2)}
         </span>
       </div>
 

@@ -1,22 +1,44 @@
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
+use serde::{Deserialize, Serialize, Serializer};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+use uuid::Uuid;
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum PositionType {
     Long,
     Short,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+fn serialize_decimal<S>(d: &Decimal, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    serializer.serialize_f64(d.to_f64().unwrap_or(0.0))
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Position {
     pub id: Uuid,
     pub asset: String,
-    pub entry_price: Decimal, 
-    pub quantity: Decimal,    
-    pub margin: Decimal,      
-    pub leverage: Decimal,    
-    pub pnl: Decimal,         
+
+    #[serde(serialize_with = "serialize_decimal")]
+    pub entry_price: Decimal,
+
+    #[serde(serialize_with = "serialize_decimal")]
+    pub quantity: Decimal,
+
+    #[serde(serialize_with = "serialize_decimal")]
+    pub margin: Decimal,
+
+    #[serde(serialize_with = "serialize_decimal")]
+    pub leverage: Decimal,
+
+    #[serde(serialize_with = "serialize_decimal")]
+    pub pnl: Decimal,
+
+    #[serde(serialize_with = "serialize_decimal")]
+    pub liquidation_price: Decimal,
+
     pub position_type: PositionType,
-    pub liquidation_price: Decimal, 
 }
