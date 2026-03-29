@@ -196,7 +196,7 @@ impl Engine {
         })
     }
 
-    fn should_liquidate(&self, position: &Position) -> bool {
+    pub fn should_liquidate(&self, position: &Position) -> bool {
         let current_equity = position.margin + position.pnl;
         let maintenance_threshold = position.margin * self.maintenance_margin_rate;
         current_equity <= maintenance_threshold
