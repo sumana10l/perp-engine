@@ -1,3 +1,19 @@
+// Funding model:
+//
+// Core idea:
+// - Funding transfers value between longs and shorts based on funding_rate
+// - Positive funding → longs pay shorts
+// - Negative funding → shorts pay longs
+//
+// Formula:
+// funding_payment = notional * funding_rate
+//
+// Effects:
+// - Directly modifies PnL (not margin)
+// - Impacts equity → can trigger liquidation
+//
+// Invariant:
+// - Funding is zero-sum across positions (one side pays, other receives)
 #[cfg(test)]
 mod funding_rate_tests {
     use rust_decimal::Decimal;
@@ -5,6 +21,10 @@ mod funding_rate_tests {
 
     use perp_engine::engine::engine::Engine;
     use perp_engine::engine::position::PositionType;
+
+    /// Verifies basic funding impact on LONG:
+    /// - Positive funding → LONG pays → PnL decreases
+    /// Confirms correct sign and magnitude of funding deduction.
 
     #[test]
     fn test_funding_long_position_basic() {
@@ -31,6 +51,9 @@ mod funding_rate_tests {
         assert_eq!(position_after.pnl, dec!(-10));
     }
 
+    /// Verifies basic funding impact on SHORT:
+    /// - Positive funding → SHORT receives → PnL increases
+    /// Confirms correct directional transfer.
     #[test]
     fn test_funding_short_position_basic() {
         let mut engine = Engine::new(1000.0);
@@ -56,6 +79,10 @@ mod funding_rate_tests {
         assert_eq!(position_after.pnl, dec!(10));
     }
 
+    /// Ensures funding reduces LONG equity:
+    /// - Equity = margin + pnl
+    /// - Funding loss directly reduces total equity
+    /// Confirms risk increases even without price movement.
     #[test]
     fn test_funding_reduces_long_equity() {
         let mut engine = Engine::new(1000.0);
@@ -86,6 +113,9 @@ mod funding_rate_tests {
         assert_eq!(equity_after, dec!(90));
     }
 
+    /// Ensures funding increases SHORT equity:
+    /// - Funding gain increases total position equity
+    /// Validates asymmetry between LONG and SHORT.
     #[test]
     fn test_funding_increases_short_equity() {
         let mut engine = Engine::new(1000.0);
@@ -115,7 +145,9 @@ mod funding_rate_tests {
 
         assert_eq!(equity_after, dec!(110));
     }
-
+    /// Validates funding calculation across multiple rates:
+    /// - funding = notional * rate
+    /// Ensures linear scaling with funding_rate.
     #[test]
     fn test_funding_with_different_rates() {
         let rates = vec![dec!(0.001), dec!(0.01), dec!(0.02), dec!(0.03)];
@@ -141,7 +173,9 @@ mod funding_rate_tests {
             assert_eq!(position.pnl, expected_pnl);
         }
     }
-
+    /// Validates funding scales with leverage:
+    /// - Higher leverage → larger notional → higher funding impact
+    /// Confirms leverage amplifies funding cost.
     #[test]
     fn test_funding_with_different_leverage() {
         let leverages = vec![dec!(1), dec!(5), dec!(10), dec!(50)];
@@ -169,7 +203,9 @@ mod funding_rate_tests {
             assert_eq!(position.pnl, expected_pnl);
         }
     }
-
+    /// Ensures funding accumulates over time:
+    /// - Repeated funding applications compound linearly
+    /// Confirms no reset or overwrite of PnL.
     #[test]
     fn test_funding_multiple_periods_cumulative() {
         let mut engine = Engine::new(1000.0);
@@ -194,7 +230,9 @@ mod funding_rate_tests {
             assert_eq!(position.pnl, expected_pnl);
         }
     }
-
+    /// Ensures extreme funding can trigger liquidation:
+    /// - Funding alone reduces equity below threshold
+    /// Confirms funding is part of liquidation pathway.
     #[test]
     fn test_funding_triggers_liquidation_long() {
         let mut engine = Engine::new(1000.0);
@@ -215,7 +253,9 @@ mod funding_rate_tests {
             "Position should be liquidated by funding"
         );
     }
-
+    /// Ensures SHORT is not liquidated under positive funding:
+    /// - SHORT benefits → equity increases
+    /// Confirms no false liquidation.
     #[test]
     fn test_funding_does_not_liquidate_short() {
         let mut engine = Engine::new(1000.0);
@@ -236,7 +276,10 @@ mod funding_rate_tests {
             "Short position should not be liquidated by positive funding"
         );
     }
-
+    /// Validates funding across multiple positions:
+    /// - Each position updated independently
+    /// - LONG loses, SHORT gains
+    /// Confirms isolation + correct distribution.
     #[test]
     fn test_funding_on_multiple_positions() {
         let mut engine = Engine::new(10000.0);
@@ -268,7 +311,9 @@ mod funding_rate_tests {
 
         assert_eq!(pos3.pnl, dec!(-12));
     }
-
+    /// Ensures funding applies on top of existing PnL:
+    /// - Funding adjusts current PnL, not resets it
+    /// Confirms additive behavior.
     #[test]
     fn test_funding_with_existing_pnl() {
         let mut engine = Engine::new(1000.0);
@@ -297,7 +342,9 @@ mod funding_rate_tests {
 
         assert_eq!(position.pnl, dec!(39.50));
     }
-
+    /// Edge case: zero funding rate:
+    /// - No PnL change should occur
+    /// Confirms no-op behavior.
     #[test]
     fn test_zero_funding_rate() {
         let mut engine = Engine::new(1000.0);
@@ -327,7 +374,9 @@ mod funding_rate_tests {
 
         assert_eq!(pnl_before, pnl_after);
     }
-
+    /// Validates negative funding:
+    /// - LONG receives, SHORT pays
+    /// Confirms sign inversion logic.
     #[test]
     fn test_negative_funding_rate() {
         let mut engine = Engine::new(1000.0);
@@ -359,7 +408,9 @@ mod funding_rate_tests {
 
         assert!(short_pos.pnl < dec!(0), "Short should pay negative funding");
     }
-
+    /// Ensures decimal precision is handled correctly:
+    /// - Non-integer values produce stable, non-zero PnL
+    /// Guards against rounding errors.
     #[test]
     fn test_funding_decimal_precision() {
         let mut engine = Engine::new(10000.0);
@@ -383,7 +434,9 @@ mod funding_rate_tests {
             "Long should have negative PnL from funding"
         );
     }
-
+    /// Validates zero-sum funding transfer:
+    /// - LONG loss == SHORT gain
+    /// Confirms conservation of value in system.
     #[test]
     fn test_funding_payment_transfer() {
         let mut engine = Engine::new(10000.0);

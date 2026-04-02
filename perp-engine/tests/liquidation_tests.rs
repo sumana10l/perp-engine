@@ -1,10 +1,22 @@
+// Liquidation model:
+// - Positions are liquidated when losses reach ~95% of margin
+// - Remaining ~5% acts as buffer (fees / insurance)
+// - Triggered on:
+//   1. Price updates (mark price crossing threshold)
+//   2. Accumulated funding reducing margin
+// - Liquidated positions are fully removed from engine state
+
 #[cfg(test)]
 mod liquidation_tests {
     use rust_decimal_macros::dec;
 
     use perp_engine::engine::engine::Engine;
     use perp_engine::engine::position::PositionType;
-
+    
+    /// Verifies liquidation price formula for LONG positions.
+    /// Expected: liq_price = entry * (1 - 0.95 / leverage)
+    /// Ensures margin buffer is enforced.
+   
     #[test]
     fn test_liquidation_price_long() {
         let mut engine = Engine::new(1000.0);
@@ -23,6 +35,9 @@ mod liquidation_tests {
         assert_eq!(position.liquidation_price, expected_liq_price);
     }
 
+    /// Verifies liquidation price formula for SHORT positions.
+    /// Expected: liq_price = entry * (1 + 0.95 / leverage
+  
     #[test]
     fn test_liquidation_price_short() {
         let mut engine = Engine::new(1000.0);
@@ -40,6 +55,10 @@ mod liquidation_tests {
 
         assert_eq!(position.liquidation_price, expected_liq_price);
     }
+    /// Ensures liquidation triggers correctly:
+    /// - No liquidation above threshold
+    /// - Liquidation at or below threshold
+    /// Also verifies position removal from engine state.
 
     #[test]
     fn test_should_liquidate_function() {
@@ -66,6 +85,8 @@ mod liquidation_tests {
             "Position should be liquidated at liq price"
         );
     }
+    /// Edge case: liquidation occurs exactly at threshold price.
+    /// Confirms boundary condition is handled correctly.
     #[test]
     fn test_liquidation_at_exact_threshold() {
         let mut engine = Engine::new(1000.0);
@@ -86,7 +107,8 @@ mod liquidation_tests {
             "Position should be liquidated at exact threshold"
         );
     }
-
+    /// Ensures liquidation when price crosses BELOW threshold.
+    /// Confirms strict enforcement (no delayed liquidation).
     #[test]
     fn test_liquidation_below_threshold() {
         let mut engine = Engine::new(1000.0);
@@ -108,6 +130,10 @@ mod liquidation_tests {
         );
     }
 
+    /// Ensures position safety ABOVE threshold:
+    /// - Position remains active
+    /// - PnL evolves without triggering liquidation
+    /// Validates no premature liquidation.
     #[test]
     fn test_safe_position_above_threshold() {
         let mut engine = Engine::new(1000.0);
@@ -138,6 +164,9 @@ mod liquidation_tests {
         assert!(pos.pnl > dec!(-95));
     }
 
+    /// Prevents double liquidation / double close:
+    /// - Once removed, position cannot be closed again
+    /// - Engine must return error on invalid action
     #[test]
     fn test_double_liquidation_prevention() {
         let mut engine = Engine::new(1000.0);
@@ -163,7 +192,10 @@ mod liquidation_tests {
                 .contains("not found or already closed")
         );
     }
-
+   
+    /// Ensures funding-driven liquidation:
+    /// - Funding reduces effective margin over time
+    /// - Liquidation occurs even without price movement
     #[test]
     fn test_funding_triggered_liquidation() {
         let mut engine = Engine::new(1000.0);
@@ -191,7 +223,10 @@ mod liquidation_tests {
             "Position should be liquidated by accumulated funding"
         );
     }
-
+    /// Tests selective liquidation across multiple positions:
+    /// - Only positions breaching threshold are removed
+    /// - Others remain intact
+    /// Confirms isolation between positions.
     #[test]
     fn test_selective_liquidation_multiple_positions() {
         let mut engine = Engine::new(10000.0);
@@ -225,7 +260,9 @@ mod liquidation_tests {
         assert!(engine.get_position(pos2_id).is_some());
         assert!(engine.get_position(pos3_id).is_some());
     }
-
+    /// Validates liquidation formula across multiple leverages:
+    /// - Higher leverage → closer liquidation price
+    /// - Formula scales correctly with leverage
     #[test]
     fn test_liquidation_price_different_leverages() {
         let leverages = vec![dec!(1), dec!(5), dec!(10), dec!(50), dec!(100)];
@@ -248,3 +285,10 @@ mod liquidation_tests {
         }
     }
 }
+
+
+// Margin Buffer: It uses a 95% loss threshold (likely leaving 5% as a "liquidation fee" or insurance fund contribution).
+
+// Price Updates: Liquidation is checked every time update_price is called.
+
+// Position Lifecycle: A liquidated position is completely removed (is_none()) from the engine's internal storage.
