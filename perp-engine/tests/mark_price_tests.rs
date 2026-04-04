@@ -1,3 +1,21 @@
+// Mark price model:
+//
+// Core idea:
+// - Mark price = smoothed price derived from recent spot prices
+// - Used instead of raw spot to prevent manipulation and unfair liquidations
+//
+// Mechanism:
+// - Maintains rolling buffer (max 10 prices)
+// - Mark price = average of recent price history
+//
+// Design goals:
+// - Reduce volatility impact (flash crashes/spikes)
+// - Prevent liquidation from short-lived price manipulation
+// - Still track real market trend over time
+//
+// Invariant:
+// - mark_price ∈ [min(price_history), max(price_history)]
+// - mark_price lags spot but converges over time
 #[cfg(test)]
 mod mark_price_tests {
     use rust_decimal::Decimal;
@@ -6,6 +24,9 @@ mod mark_price_tests {
     use perp_engine::engine::engine::Engine;
     use perp_engine::engine::position::PositionType;
 
+    /// Ensures initial mark price equals spot price:
+    /// - No history → mark = current price
+    /// Confirms correct initialization behavior.
     #[test]
     fn test_initial_mark_price_equals_spot() {
         let mut engine = Engine::new(1000.0);
@@ -18,7 +39,9 @@ mod mark_price_tests {
         assert_eq!(result.new_price, dec!(100));
         assert_eq!(result.mark_price, dec!(100));
     }
-
+    /// Validates moving average calculation:
+    /// - Mark price = average of recent prices
+    /// Confirms smoothing logic over price history.
     #[test]
     fn test_moving_average_calculation() {
         let mut engine = Engine::new(1000.0);
@@ -37,7 +60,9 @@ mod mark_price_tests {
             (dec!(100) + dec!(101) + dec!(102) + dec!(103) + dec!(104) + dec!(104)) / dec!(6);
         assert_eq!(result.mark_price, expected_mark);
     }
-
+    /// Ensures price history buffer is capped at 10 entries:
+    /// - Oldest prices are dropped as new ones arrive
+    /// Confirms bounded memory + rolling window behavior.
     #[test]
     fn test_price_history_buffer_max_10() {
         let mut engine = Engine::new(1000.0);
@@ -52,7 +77,9 @@ mod mark_price_tests {
         let oldest_in_buffer = engine.price_history.front().unwrap();
         assert_eq!(*oldest_in_buffer, dec!(105));
     }
-
+    /// Ensures mark price lags sudden spot changes:
+    /// - Mark reacts slower than spot
+    /// Confirms smoothing prevents abrupt jumps.
     #[test]
     fn test_mark_price_lags_behind_spot() {
         let mut engine = Engine::new(1000.0);
@@ -78,7 +105,10 @@ mod mark_price_tests {
             "Mark price should increase but not fully"
         );
     }
-
+    /// Validates flash crash protection:
+    /// - Sudden drop in spot should not fully reflect in mark price
+    /// - Prevents immediate liquidation due to temporary spikes
+    /// Confirms safety against extreme short-term volatility.
     #[test]
     fn test_flash_crash_protection() {
         let mut engine = Engine::new(10000.0);
@@ -124,7 +154,9 @@ mod mark_price_tests {
             panic!("Position liquidated even with mark price smoothing - crash too severe");
         }
     }
-
+    /// Ensures gradual price changes are tracked closely:
+    /// - Mark follows trend with limited lag
+    /// Confirms balance between responsiveness and smoothing.
     #[test]
     fn test_gradual_price_change_tracks_quickly() {
         let mut engine = Engine::new(1000.0);
@@ -147,7 +179,9 @@ mod mark_price_tests {
         assert!(diff < dec!(2), "Gradual changes should have reasonable lag");
         assert!(diff > dec!(1), "Mark price should lag behind spot price");
     }
-
+    /// Ensures buffer fills incrementally:
+    /// - Mark calculation adapts as history builds
+    /// Confirms correct behavior before buffer saturation.
     #[test]
     fn test_buffer_fills_gradually() {
         let mut engine = Engine::new(1000.0);
@@ -166,7 +200,9 @@ mod mark_price_tests {
 
         assert_eq!(engine.price_history.len(), 10);
     }
-
+    /// Validates behavior under extreme volatility:
+    /// - Mark smooths both crash and recovery
+    /// Confirms stability across large oscillations.
     #[test]
     fn test_mark_price_extreme_volatility() {
         let mut engine = Engine::new(1000.0);
@@ -199,7 +235,9 @@ mod mark_price_tests {
             "Mark price should increase on recovery"
         );
     }
-
+    /// Ensures mark price respects historical bounds:
+    /// - Mark must lie within observed price range
+    /// Confirms no artificial distortion.
     #[test]
     fn test_mark_price_respects_history() {
         let mut engine = Engine::new(1000.0);
@@ -218,7 +256,9 @@ mod mark_price_tests {
 
         assert!(result.mark_price >= *min_in_buffer);
     }
-
+    /// Ensures consistent directional updates:
+    /// - Sustained upward movement → mark increases gradually
+    /// Confirms trend-following behavior.
     #[test]
     fn test_multiple_updates_same_direction() {
         let mut engine = Engine::new(1000.0);
@@ -247,7 +287,9 @@ mod mark_price_tests {
             "Mark price should not exceed highest recent price significantly"
         );
     }
-
+    /// Edge case: single price entry:
+    /// - Mark equals spot when only one data point exists
+    /// Confirms base case correctness.
     #[test]
     fn test_mark_price_single_entry() {
         let mut engine = Engine::new(1000.0);
@@ -258,7 +300,9 @@ mod mark_price_tests {
 
         assert_eq!(result.mark_price, dec!(100));
     }
-
+    /// Ensures decimal precision is preserved:
+    /// - High precision inputs produce accurate mark values
+    /// Guards against rounding errors in averaging.
     #[test]
     fn test_mark_price_decimal_precision() {
         let mut engine = Engine::new(1000.0);
@@ -288,7 +332,9 @@ mod mark_price_tests {
             / dec!(6);
         assert_eq!(result.mark_price, expected);
     }
-
+    /// Ensures mark price prevents false liquidation:
+    /// - Temporary dips should not trigger liquidation
+    /// Confirms protective role of mark price in risk system.
     #[test]
     fn test_mark_price_prevents_false_liquidations() {
         let mut engine = Engine::new(1000.0);
@@ -312,7 +358,9 @@ mod mark_price_tests {
 
         assert!(position.is_some(), "Position should survive temporary dip");
     }
-
+    /// Ensures mark price convergence:
+    /// - Sustained price → mark approaches spot over time
+    /// Confirms long-term alignment with market.
     #[test]
     fn test_mark_price_convergence() {
         let mut engine = Engine::new(1000.0);
@@ -344,7 +392,9 @@ mod mark_price_tests {
             "Mark price should converge after sustained price"
         );
     }
-
+    /// Ensures oldest prices are evicted correctly:
+    /// - Rolling window removes stale data
+    /// Confirms FIFO behavior of price buffer.
     #[test]
     fn test_old_prices_removed_from_buffer() {
         let mut engine = Engine::new(1000.0);
@@ -370,3 +420,7 @@ mod mark_price_tests {
         );
     }
 }
+
+// If mark price fails → system becomes exploitable:
+// - Traders can trigger forced liquidations via price manipulation
+// - Leads to unfair liquidations and potential bad debt

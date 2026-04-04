@@ -12,11 +12,11 @@ mod liquidation_tests {
 
     use perp_engine::engine::engine::Engine;
     use perp_engine::engine::position::PositionType;
-    
+
     /// Verifies liquidation price formula for LONG positions.
     /// Expected: liq_price = entry * (1 - 0.95 / leverage)
     /// Ensures margin buffer is enforced.
-   
+
     #[test]
     fn test_liquidation_price_long() {
         let mut engine = Engine::new(1000.0);
@@ -36,8 +36,8 @@ mod liquidation_tests {
     }
 
     /// Verifies liquidation price formula for SHORT positions.
-    /// Expected: liq_price = entry * (1 + 0.95 / leverage
-  
+    /// Expected: liq_price = entry * (1 + 0.95 / leverage )
+
     #[test]
     fn test_liquidation_price_short() {
         let mut engine = Engine::new(1000.0);
@@ -192,7 +192,7 @@ mod liquidation_tests {
                 .contains("not found or already closed")
         );
     }
-   
+
     /// Ensures funding-driven liquidation:
     /// - Funding reduces effective margin over time
     /// - Liquidation occurs even without price movement
@@ -285,7 +285,6 @@ mod liquidation_tests {
         }
     }
 }
-
 
 // Margin Buffer: It uses a 95% loss threshold (likely leaving 5% as a "liquidation fee" or insurance fund contribution).
 

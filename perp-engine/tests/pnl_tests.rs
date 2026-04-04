@@ -248,3 +248,6 @@ mod pnl_tests {
         assert_eq!(last_trade.exit, dec!(50));
     }
 }
+// If PnL calculation is wrong → entire system breaks:
+// - Liquidation thresholds become invalid
+// - Equity tracking becomes unreliable
