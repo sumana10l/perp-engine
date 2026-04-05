@@ -1,4 +1,5 @@
 use actix_web::{App, HttpServer, middleware, web};
+use crate::auth::middleware::JwtMiddleware;
 use std::env;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -6,6 +7,9 @@ use tracing::{error, info, warn};
 mod api;
 mod engine;
 mod market;
+mod auth;  
+
+
 use crate::api::position::close_position;
 use crate::api::position::get_balance;
 use crate::api::position::get_funding_rate;
@@ -17,6 +21,8 @@ use crate::api::position::open_position;
 use crate::engine::engine::Engine;
 use crate::engine::event::EngineEvent;
 use crate::market::ws::start_price_feed;
+use crate::api::auth::login; 
+
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -142,6 +148,7 @@ async fn main() -> std::io::Result<()> {
 
     let server = HttpServer::new(move || {
         App::new()
+            .wrap(JwtMiddleware)   
             .wrap(middleware::Logger::default())
             .wrap(
                 actix_cors::Cors::default()
@@ -150,7 +157,8 @@ async fn main() -> std::io::Result<()> {
                     .allow_any_header(),
             )
             .app_data(web::Data::new(engine.clone()))
-            .route("/health", web::get().to(health_check))
+            .route("/auth/login", web::post().to(login))  
+            .route("/health", web::get().to(health_check)) 
             .route("/position/open", web::post().to(open_position))
             .route("/positions", web::get().to(get_positions))
             .route("/position/close", web::post().to(close_position))
