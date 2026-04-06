@@ -1,5 +1,4 @@
 use rust_decimal::Decimal;
-use rust_decimal::prelude::ToPrimitive;
 use serde::{Deserialize, Serialize, Serializer};
 
 use uuid::Uuid;
@@ -14,7 +13,8 @@ fn serialize_decimal<S>(d: &Decimal, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    serializer.serialize_f64(d.to_f64().unwrap_or(0.0))
+    serializer.serialize_str(&d.to_string())
+
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
