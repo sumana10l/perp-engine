@@ -146,12 +146,7 @@ pub async fn get_price(data: web::Data<Arc<RwLock<Engine>>>) -> HttpResponse {
     let current_price = engine.current_price;
     let history_len = engine.price_history.len();
 
-    let mark_price = if engine.price_history.is_empty() {
-        engine.current_price
-    } else {
-        let sum: Decimal = engine.price_history.iter().sum();
-        sum / Decimal::from(engine.price_history.len())
-    };
+    let mark_price = engine.mark_price; 
 
     drop(engine);
 
@@ -167,7 +162,7 @@ pub async fn get_funding_rate(data: web::Data<Arc<RwLock<Engine>>>) -> HttpRespo
 
     HttpResponse::Ok().json(serde_json::json!({
         "funding_rate": engine.funding_rate,
-        "yearly_apr": engine.funding_rate * Decimal::from(365) * Decimal::from(8),
+        "yearly_apr": engine.funding_rate * Decimal::from(365) * Decimal::from(24),
         "last_funding_time": engine.last_funding_time.elapsed().as_secs(),
     }))
 }
