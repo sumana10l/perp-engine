@@ -26,7 +26,6 @@ pub async fn start_price_feed(
         match connect_async(&url).await {
             Ok((ws_stream, _)) => {
                 info!("Connected to Binance price feed for {}", asset);
-                connection_failures = 0;
 
                 let (_, mut read) = ws_stream.split();
 
