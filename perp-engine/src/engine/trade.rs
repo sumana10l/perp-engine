@@ -1,6 +1,7 @@
 use crate::engine::position::PositionType;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize, Serializer};
+use chrono::{DateTime, Utc};
 
 fn serialize_decimal<S>(d: &Decimal, serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -22,4 +23,6 @@ pub struct Trade {
     pub pnl: Decimal,
 
     pub position_type: PositionType,
+    pub asset: String,          
+    pub closed_at: DateTime<Utc>, 
 }

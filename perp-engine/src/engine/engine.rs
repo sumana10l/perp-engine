@@ -256,6 +256,8 @@ impl Engine {
             exit: self.current_price,
             pnl: position.pnl,
             position_type: position.position_type.clone(),
+            asset: position.asset.clone(),        // 👈 new
+            closed_at: chrono::Utc::now(),        // 👈 new
         };
         self.trade_history.push(trade);
 
@@ -263,10 +265,10 @@ impl Engine {
 
 
         info!(
-            "Position closed: id={}, pnl={}, exit_price={}, equity_returned={}",
+            "Position closed: id={}, pnl={}, exit_price={}, equity_returned={}, closed_at={}",
             position_id, position.pnl, self.current_price,
-            current_equity.max(Decimal::ZERO)
-
+            current_equity.max(Decimal::ZERO),
+            chrono::Utc::now()
         );
 
         Ok(current_equity)
