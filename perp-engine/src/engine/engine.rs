@@ -52,7 +52,7 @@ impl Engine {
             price_history: VecDeque::with_capacity(10),
             max_leverage: dec!(100),
             max_positions: 50,
-            mark_price: dec!(0.0),      // 👈 add this
+            mark_price: dec!(0.0),     
 
         }
     }
@@ -248,7 +248,7 @@ impl Engine {
         })
     }
 
-    pub fn close_position(&mut self, position_id: Uuid) -> Result<Decimal, String> {
+    pub fn close_position(&mut self, position_id: Uuid) -> Result<(Decimal, Decimal), String>{
         let position = self.positions.remove(&position_id).ok_or_else(|| {
             format!("Position {} not found or already closed", position_id)
         })?;
@@ -260,8 +260,8 @@ impl Engine {
             exit: self.current_price,
             pnl: position.pnl,
             position_type: position.position_type.clone(),
-            asset: position.asset.clone(),        // 👈 new
-            closed_at: chrono::Utc::now(),        // 👈 new
+            asset: position.asset.clone(),        
+            closed_at: chrono::Utc::now(),        
         };
         self.trade_history.push(trade);
 
@@ -275,7 +275,7 @@ impl Engine {
             chrono::Utc::now()
         );
 
-        Ok(current_equity)
+        Ok((position.pnl, current_equity))
     }
 
     pub fn get_position(&self, position_id: Uuid) -> Option<&Position> {

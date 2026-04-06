@@ -129,9 +129,10 @@ pub async fn close_position(
     let mut engine = data.write().await;
 
     match engine.close_position(req.position_id) {
-        Ok(pnl) => HttpResponse::Ok().json(serde_json::json!({
+        Ok((pnl, equity_returned)) => HttpResponse::Ok().json(serde_json::json!({
             "position_id": req.position_id,
-            "pnl": pnl,
+            "pnl": pnl,                     
+            "equity_returned": equity_returned, 
             "closed_at": chrono::Utc::now(),
         })),
         Err(e) => HttpResponse::NotFound().json(ErrorResponse {
