@@ -171,7 +171,6 @@ impl Engine {
 
         let positions_affected = self.positions.len();
 
-        // Find liquidations
         let to_liquidate: Vec<Uuid> = self
             .positions
             .values()
@@ -206,7 +205,6 @@ impl Engine {
         let rate = self.funding_rate;
         let mut total_applied = Decimal::ZERO;
 
-        // Apply funding to all positions
         for position in self.positions.values_mut() {
             let notional_value = position.quantity * self.current_price;
             let funding_amount = notional_value * rate;
@@ -261,11 +259,14 @@ impl Engine {
         };
         self.trade_history.push(trade);
 
-        self.balance += current_equity;
+        self.balance += current_equity.max(Decimal::ZERO);
+
 
         info!(
-            "Position closed: id={}, pnl={}, exit_price={}",
-            position_id, position.pnl, self.current_price
+            "Position closed: id={}, pnl={}, exit_price={}, equity_returned={}",
+            position_id, position.pnl, self.current_price,
+            current_equity.max(Decimal::ZERO)
+
         );
 
         Ok(current_equity)
