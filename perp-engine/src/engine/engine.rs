@@ -36,6 +36,7 @@ pub struct Engine {
     pub price_history: VecDeque<Decimal>,
     pub max_leverage: Decimal,
     pub max_positions: usize,
+    pub mark_price: Decimal,        
 }
 
 impl Engine {
@@ -51,6 +52,8 @@ impl Engine {
             price_history: VecDeque::with_capacity(10),
             max_leverage: dec!(100),
             max_positions: 50,
+            mark_price: dec!(0.0),      // 👈 add this
+
         }
     }
 
@@ -150,7 +153,7 @@ impl Engine {
             self.price_history.pop_front();
         }
 
-        let mark_price = if self.price_history.is_empty() {
+        self.mark_price = if self.price_history.is_empty() {
             new_price
         } else {
             let sum: Decimal = self.price_history.iter().sum();
@@ -160,10 +163,10 @@ impl Engine {
         for position in self.positions.values_mut() {
             let pnl = match position.position_type {
                 PositionType::Long => {
-                    (self.current_price - position.entry_price) * position.quantity
+                    (self.mark_price - position.entry_price) * position.quantity
                 }
                 PositionType::Short => {
-                    (position.entry_price - self.current_price) * position.quantity
+                    (position.entry_price - self.mark_price) * position.quantity
                 }
             };
             position.pnl = pnl;
@@ -189,13 +192,14 @@ impl Engine {
 
         Ok(UpdateResult {
             new_price,
-            mark_price,
+            mark_price : self.mark_price,
             liquidated_positions,
             positions_affected,
         })
     }
 
     pub fn should_liquidate(&self, position: &Position) -> bool {
+        // Uses mark_price-based PnL
         let current_equity = position.margin + position.pnl;
         let maintenance_threshold = position.margin * self.maintenance_margin_rate;
         current_equity <= maintenance_threshold
@@ -206,7 +210,7 @@ impl Engine {
         let mut total_applied = Decimal::ZERO;
 
         for position in self.positions.values_mut() {
-            let notional_value = position.quantity * self.current_price;
+            let notional_value = position.quantity * self.mark_price;
             let funding_amount = notional_value * rate;
 
             if position.position_type == PositionType::Long {
