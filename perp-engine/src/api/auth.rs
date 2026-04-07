@@ -1,6 +1,6 @@
-use actix_web::{web, HttpResponse};
-use serde::Deserialize;
 use crate::auth::create_token;
+use actix_web::{HttpResponse, web};
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct LoginRequest {

@@ -31,6 +31,12 @@ mod funding_rate_tests {
         let mut engine = Engine::new(1000.0);
         engine.current_price = dec!(100);
 
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(100))
+                .expect("Failed to update price");
+        }
+
         let position_id = engine
             .open_position("BTC", dec!(100), dec!(10), PositionType::Long)
             .expect("Failed to open position");
@@ -58,6 +64,12 @@ mod funding_rate_tests {
     fn test_funding_short_position_basic() {
         let mut engine = Engine::new(1000.0);
         engine.current_price = dec!(100);
+
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(100))
+                .expect("Failed to update price");
+        }
 
         let position_id = engine
             .open_position("BTC", dec!(100), dec!(10), PositionType::Short)
@@ -87,6 +99,12 @@ mod funding_rate_tests {
     fn test_funding_reduces_long_equity() {
         let mut engine = Engine::new(1000.0);
         engine.current_price = dec!(100);
+
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(100))
+                .expect("Failed to update price");
+        }
 
         let position_id = engine
             .open_position("BTC", dec!(100), dec!(10), PositionType::Long)
@@ -120,6 +138,12 @@ mod funding_rate_tests {
     fn test_funding_increases_short_equity() {
         let mut engine = Engine::new(1000.0);
         engine.current_price = dec!(100);
+
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(100))
+                .expect("Failed to update price");
+        }
 
         let position_id = engine
             .open_position("BTC", dec!(100), dec!(10), PositionType::Short)
@@ -156,6 +180,12 @@ mod funding_rate_tests {
             let mut engine = Engine::new(10000.0);
             engine.current_price = dec!(100);
 
+            for _ in 0..10 {
+                engine
+                    .update_price(dec!(100))
+                    .expect("Failed to update price");
+            }
+
             let position_id = engine
                 .open_position("BTC", dec!(500), dec!(5), PositionType::Long)
                 .expect("Failed to open position");
@@ -184,6 +214,12 @@ mod funding_rate_tests {
             let mut engine = Engine::new(10000.0);
             engine.current_price = dec!(100);
 
+            for _ in 0..10 {
+                engine
+                    .update_price(dec!(100))
+                    .expect("Failed to update price");
+            }
+
             let position_id = engine
                 .open_position("BTC", dec!(100), leverage, PositionType::Long)
                 .expect("Failed to open position");
@@ -210,6 +246,12 @@ mod funding_rate_tests {
     fn test_funding_multiple_periods_cumulative() {
         let mut engine = Engine::new(1000.0);
         engine.current_price = dec!(100);
+
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(100))
+                .expect("Failed to update price");
+        }
 
         let position_id = engine
             .open_position("BTC", dec!(100), dec!(10), PositionType::Long)
@@ -238,6 +280,12 @@ mod funding_rate_tests {
         let mut engine = Engine::new(1000.0);
         engine.current_price = dec!(100);
 
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(100))
+                .expect("Failed to update price");
+        }
+
         let position_id = engine
             .open_position("BTC", dec!(100), dec!(10), PositionType::Long)
             .expect("Failed to open position");
@@ -260,6 +308,12 @@ mod funding_rate_tests {
     fn test_funding_does_not_liquidate_short() {
         let mut engine = Engine::new(1000.0);
         engine.current_price = dec!(100);
+
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(100))
+                .expect("Failed to update price");
+        }
 
         let position_id = engine
             .open_position("BTC", dec!(100), dec!(10), PositionType::Short)
@@ -284,6 +338,12 @@ mod funding_rate_tests {
     fn test_funding_on_multiple_positions() {
         let mut engine = Engine::new(10000.0);
         engine.current_price = dec!(100);
+
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(100))
+                .expect("Failed to update price");
+        }
 
         let pos1_id = engine
             .open_position("BTC", dec!(100), dec!(10), PositionType::Long)
@@ -382,6 +442,12 @@ mod funding_rate_tests {
         let mut engine = Engine::new(1000.0);
         engine.current_price = dec!(100);
 
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(100))
+                .expect("Failed to update price");
+        }
+
         let long_pos_id = engine
             .open_position("BTC", dec!(100), dec!(10), PositionType::Long)
             .expect("Failed to open long position");
@@ -416,6 +482,12 @@ mod funding_rate_tests {
         let mut engine = Engine::new(10000.0);
         engine.current_price = dec!(100.123456);
 
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(100.123456))
+                .expect("Failed to update price");
+        }
+
         let position_id = engine
             .open_position("BTC", dec!(123.456789), dec!(7.654321), PositionType::Long)
             .expect("Failed to open position");
@@ -441,6 +513,12 @@ mod funding_rate_tests {
     fn test_funding_payment_transfer() {
         let mut engine = Engine::new(10000.0);
         engine.current_price = dec!(100);
+
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(100))
+                .expect("Failed to update price");
+        }
 
         let long_pos_id = engine
             .open_position("BTC", dec!(100), dec!(10), PositionType::Long)

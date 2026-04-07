@@ -1,20 +1,21 @@
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
-pub mod middleware;  
+pub mod middleware;
 const SECRET: &[u8] = b"your-secret-key-change-in-prod";
 
 #[derive(Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String,   
-    pub exp: usize,   
+    pub sub: String,
+    pub exp: usize,
 }
 
 pub fn create_token(user_id: &str) -> Result<String, jsonwebtoken::errors::Error> {
     let exp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
-        .as_secs() as usize + 3600; 
+        .as_secs() as usize
+        + 3600;
 
     let claims = Claims {
         sub: user_id.to_string(),

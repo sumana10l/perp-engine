@@ -14,7 +14,6 @@ where
     S: Serializer,
 {
     serializer.serialize_str(&d.to_string())
-
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

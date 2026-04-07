@@ -4,15 +4,14 @@ use rust_decimal::prelude::*;
 use rust_decimal_macros::dec;
 use std::collections::HashMap;
 use std::collections::VecDeque;
-use uuid::Uuid;
 use tracing::info;
-
+use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub struct UpdateResult {
     pub new_price: Decimal,
     pub mark_price: Decimal,
-    pub liquidated_positions: Vec<(Uuid, Decimal)>, 
+    pub liquidated_positions: Vec<(Uuid, Decimal)>,
     pub positions_affected: usize,
 }
 
@@ -23,7 +22,6 @@ pub struct FundingResult {
     pub liquidated_ids: Vec<(Uuid, Decimal)>,
     pub timestamp: std::time::Instant,
 }
-
 
 pub struct Engine {
     pub positions: HashMap<Uuid, Position>,
@@ -36,7 +34,7 @@ pub struct Engine {
     pub price_history: VecDeque<Decimal>,
     pub max_leverage: Decimal,
     pub max_positions: usize,
-    pub mark_price: Decimal,        
+    pub mark_price: Decimal,
 }
 
 impl Engine {
@@ -52,8 +50,7 @@ impl Engine {
             price_history: VecDeque::with_capacity(10),
             max_leverage: dec!(100),
             max_positions: 50,
-            mark_price: dec!(0.0),     
-
+            mark_price: dec!(0.0),
         }
     }
 
@@ -64,61 +61,53 @@ impl Engine {
         leverage: Decimal,
         position_type: PositionType,
     ) -> Result<Uuid, String> {
-    
         if asset.is_empty() || asset.len() > 20 {
             return Err("Invalid asset name. Must be 1-20 characters.".into());
         }
-    
+
         if margin <= dec!(0.0) {
             return Err("Margin must be positive".into());
         }
-    
+
         if margin > self.balance {
             return Err(format!(
                 "Insufficient balance. Available: {}, Required: {}",
                 self.balance, margin
             ));
         }
-    
+
         if leverage < dec!(1.0) {
             return Err("Leverage must be at least 1x".into());
         }
-    
+
         if leverage > self.max_leverage {
-            return Err(format!(
-                "Leverage must not exceed {}x",
-                self.max_leverage
-            ));
+            return Err(format!("Leverage must not exceed {}x", self.max_leverage));
         }
-    
+
         if self.current_price <= dec!(0.0) {
             return Err("Market price not initialized".into());
         }
-    
+
         if self.positions.len() >= self.max_positions {
             return Err(format!(
                 "Maximum number of positions ({}) reached",
                 self.max_positions
             ));
         }
-    
+
         self.balance -= margin;
-    
+
         let position_size = margin * leverage;
         let quantity = position_size / self.current_price;
         let entry_price = self.current_price;
-    
+
         let maintenance_buffer = dec!(1.0) - self.maintenance_margin_rate;
-    
+
         let liquidation_price = match position_type {
-            PositionType::Long => {
-                entry_price * (dec!(1.0) - (maintenance_buffer / leverage))
-            }
-            PositionType::Short => {
-                entry_price * (dec!(1.0) + (maintenance_buffer / leverage))
-            }
+            PositionType::Long => entry_price * (dec!(1.0) - (maintenance_buffer / leverage)),
+            PositionType::Short => entry_price * (dec!(1.0) + (maintenance_buffer / leverage)),
         };
-    
+
         let position = Position {
             id: Uuid::new_v4(),
             asset: asset.to_string(),
@@ -130,15 +119,15 @@ impl Engine {
             position_type,
             liquidation_price,
         };
-    
+
         let position_id = position.id;
         self.positions.insert(position_id, position);
-    
+
         info!(
             "Position opened: id={}, asset={}, entry={}, qty={}, margin={}, leverage={}x",
             position_id, asset, entry_price, quantity, margin, leverage
         );
-    
+
         Ok(position_id)
     }
 
@@ -162,12 +151,8 @@ impl Engine {
 
         for position in self.positions.values_mut() {
             let pnl = match position.position_type {
-                PositionType::Long => {
-                    (self.mark_price - position.entry_price) * position.quantity
-                }
-                PositionType::Short => {
-                    (position.entry_price - self.mark_price) * position.quantity
-                }
+                PositionType::Long => (self.mark_price - position.entry_price) * position.quantity,
+                PositionType::Short => (position.entry_price - self.mark_price) * position.quantity,
             };
             position.pnl = pnl;
         }
@@ -192,7 +177,7 @@ impl Engine {
 
         Ok(UpdateResult {
             new_price,
-            mark_price : self.mark_price,
+            mark_price: self.mark_price,
             liquidated_positions,
             positions_affected,
         })
@@ -248,10 +233,11 @@ impl Engine {
         })
     }
 
-    pub fn close_position(&mut self, position_id: Uuid) -> Result<(Decimal, Decimal), String>{
-        let position = self.positions.remove(&position_id).ok_or_else(|| {
-            format!("Position {} not found or already closed", position_id)
-        })?;
+    pub fn close_position(&mut self, position_id: Uuid) -> Result<(Decimal, Decimal), String> {
+        let position = self
+            .positions
+            .remove(&position_id)
+            .ok_or_else(|| format!("Position {} not found or already closed", position_id))?;
 
         let current_equity = position.margin + position.pnl;
 
@@ -260,17 +246,18 @@ impl Engine {
             exit: self.current_price,
             pnl: position.pnl,
             position_type: position.position_type.clone(),
-            asset: position.asset.clone(),        
-            closed_at: chrono::Utc::now(),        
+            asset: position.asset.clone(),
+            closed_at: chrono::Utc::now(),
         };
         self.trade_history.push(trade);
 
         self.balance += current_equity.max(Decimal::ZERO);
 
-
         info!(
             "Position closed: id={}, pnl={}, exit_price={}, equity_returned={}, closed_at={}",
-            position_id, position.pnl, self.current_price,
+            position_id,
+            position.pnl,
+            self.current_price,
             current_equity.max(Decimal::ZERO),
             chrono::Utc::now()
         );

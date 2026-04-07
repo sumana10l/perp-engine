@@ -131,8 +131,8 @@ pub async fn close_position(
     match engine.close_position(req.position_id) {
         Ok((pnl, equity_returned)) => HttpResponse::Ok().json(serde_json::json!({
             "position_id": req.position_id,
-            "pnl": pnl,                     
-            "equity_returned": equity_returned, 
+            "pnl": pnl,
+            "equity_returned": equity_returned,
             "closed_at": chrono::Utc::now(),
         })),
         Err(e) => HttpResponse::NotFound().json(ErrorResponse {
@@ -147,7 +147,7 @@ pub async fn get_price(data: web::Data<Arc<RwLock<Engine>>>) -> HttpResponse {
     let current_price = engine.current_price;
     let history_len = engine.price_history.len();
 
-    let mark_price = engine.mark_price; 
+    let mark_price = engine.mark_price;
 
     drop(engine);
 

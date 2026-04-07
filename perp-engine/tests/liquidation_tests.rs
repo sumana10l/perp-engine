@@ -201,6 +201,12 @@ mod liquidation_tests {
         let mut engine = Engine::new(1000.0);
         engine.current_price = dec!(100);
 
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(100))
+                .expect("Failed to update price");
+        }
+
         let position_id = engine
             .open_position("BTC", dec!(100), dec!(10), PositionType::Long)
             .expect("Failed to open position");

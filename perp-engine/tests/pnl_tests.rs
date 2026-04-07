@@ -99,12 +99,27 @@ mod pnl_tests {
             .expect("Failed to open position");
 
         engine.update_price(dec!(105)).unwrap();
+
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(105))
+                .expect("Failed to update price");
+        }
+
         assert_eq!(engine.get_position(position_id).unwrap().pnl, dec!(25));
 
-        engine.update_price(dec!(98)).unwrap();
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(98))
+                .expect("Failed to update price");
+        }
         assert_eq!(engine.get_position(position_id).unwrap().pnl, dec!(-10));
 
-        engine.update_price(dec!(110)).unwrap();
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(110))
+                .expect("Failed to update price");
+        }
         assert_eq!(engine.get_position(position_id).unwrap().pnl, dec!(50));
     }
     /// Tests large gains under high leverage:
@@ -191,6 +206,11 @@ mod pnl_tests {
         for price in prices {
             engine.update_price(price).unwrap();
         }
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(100))
+                .expect("Failed to update price");
+        }
 
         let position = engine
             .get_position(position_id)
@@ -208,6 +228,12 @@ mod pnl_tests {
     fn test_funding_impact_on_pnl() {
         let mut engine = Engine::new(1000.0);
         engine.current_price = dec!(100);
+
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(100))
+                .expect("Failed to update price");
+        }
         engine.funding_rate = dec!(0.01);
 
         let position_id = engine

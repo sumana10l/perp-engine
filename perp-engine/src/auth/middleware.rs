@@ -1,10 +1,10 @@
-use actix_web::{
-    dev::{Service, ServiceRequest, ServiceResponse, Transform},
-    Error
-};
-use futures_util::future::{ok, Ready, LocalBoxFuture};
-use std::task::{Context, Poll};
 use crate::auth::verify_token;
+use actix_web::{
+    Error,
+    dev::{Service, ServiceRequest, ServiceResponse, Transform},
+};
+use futures_util::future::{LocalBoxFuture, Ready, ok};
+use std::task::{Context, Poll};
 
 pub struct JwtMiddleware;
 
@@ -59,13 +59,11 @@ where
                     let fut = self.service.call(req);
                     Box::pin(async move { fut.await })
                 }
-                Err(_) => Box::pin(async {
-                    Err(actix_web::error::ErrorUnauthorized("Invalid token"))
-                }),
+                Err(_) => {
+                    Box::pin(async { Err(actix_web::error::ErrorUnauthorized("Invalid token")) })
+                }
             },
-            None => Box::pin(async {
-                Err(actix_web::error::ErrorUnauthorized("Missing token"))
-            }),
+            None => Box::pin(async { Err(actix_web::error::ErrorUnauthorized("Missing token")) }),
         }
     }
 }

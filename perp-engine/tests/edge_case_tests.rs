@@ -42,9 +42,11 @@ mod edge_case_tests {
             .open_position("BTC", dec!(100), dec!(10), PositionType::Long)
             .expect("Failed to open position");
 
-        engine
-            .update_price(dec!(80))
-            .expect("Failed to update price");
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(80))
+                .expect("Failed to update price");
+        }
 
         let position = engine.get_position(position_id);
         assert!(
@@ -101,9 +103,11 @@ mod edge_case_tests {
             .open_position("SOL", dec!(150), dec!(8), PositionType::Short)
             .expect("Failed to open position 3");
 
-        engine
-            .update_price(dec!(90))
-            .expect("Failed to update price");
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(90))
+                .expect("Failed to update price");
+        }
 
         let pos1 = engine.get_position(pos1_id);
         let pos2 = engine.get_position(pos2_id);
@@ -155,6 +159,11 @@ mod edge_case_tests {
 
         assert!(engine.get_position(position_id).is_some());
 
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(100))
+                .expect("Failed to update price");
+        }
         engine.funding_rate = dec!(0.11);
 
         engine.apply_funding().expect("Failed to apply funding");
@@ -169,6 +178,12 @@ mod edge_case_tests {
     fn test_funding_plus_price_liquidation() {
         let mut engine = Engine::new(1000.0);
         engine.current_price = dec!(100);
+
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(100))
+                .expect("Failed to update price");
+        }
 
         let position_id = engine
             .open_position("BTC", dec!(100), dec!(10), PositionType::Long)
@@ -207,9 +222,11 @@ mod edge_case_tests {
             .open_position("BTC", dec!(100), dec!(5), PositionType::Long)
             .expect("Failed to open position");
 
-        engine
-            .update_price(dec!(50))
-            .expect("Failed to update price");
+        for _ in 0..10 {
+            engine
+                .update_price(dec!(50))
+                .expect("Failed to update price");
+        }
 
         let position = engine.get_position(position_id);
 
