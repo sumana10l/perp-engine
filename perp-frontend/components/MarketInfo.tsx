@@ -28,14 +28,14 @@ export default function MarketInfo({
       try {
         const priceData = await getPrice();
         const balanceData = await getBalance();
-        const newPrice = priceData.current_price;
-        setMarkPrice(priceData.mark_price);
+        const newPrice = Number(priceData.current_price);
+        setMarkPrice(Number(priceData.mark_price));
         setStartPrice((prev) => {
           if (prev === null && newPrice > 0) return newPrice;
           return prev;
         });
         setPrice(newPrice);
-        setBalance(balanceData.balance);
+        setBalance(Number(balanceData.balance));
       } catch (err) {
         console.error(err);
       }

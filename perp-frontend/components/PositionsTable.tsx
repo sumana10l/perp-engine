@@ -9,7 +9,16 @@ export default function PositionsTable() {
   const loadPositions = async () => {
     try {
       const data = await getPositions();
-      setPositions(data.positions || []);
+      const mapped = (data.positions || []).map((p: any) => ({
+        ...p,
+        entry_price: Number(p.entry_price),
+        quantity: Number(p.quantity),
+        margin: Number(p.margin),
+        pnl: Number(p.pnl),
+        liquidation_price: Number(p.liquidation_price),
+        leverage: Number(p.leverage),
+      }));
+      setPositions(mapped);
     } catch (error) {
       console.error("Error loading positions:", error);
     }

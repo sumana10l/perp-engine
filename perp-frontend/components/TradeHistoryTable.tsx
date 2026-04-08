@@ -9,7 +9,13 @@ export default function TradeHistoryTable() {
   const loadTrades = async () => {
     try {
       const data = await getTradeHistory();
-      setTrades(data.trades || []);
+      const mapped = (data.trades || []).map((t: any) => ({
+        ...t,
+        entry: Number(t.entry),
+        exit: Number(t.exit),
+        pnl: Number(t.pnl),
+      }));
+      setTrades(mapped);
     } catch (err) {
       console.error("Failed to load trades:", err);
       setTrades([]);
