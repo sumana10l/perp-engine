@@ -1,5 +1,4 @@
-use actix_web::HttpResponse;
-use actix_web::web;
+use actix_web::{HttpResponse, web, HttpRequest};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -7,9 +6,10 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::engine::engine::Engine;
 use crate::engine::position::{Position, PositionType};
 use crate::engine::trade::Trade;
+use crate::engine::multi_user_engine::MultiUserEngine;
+use actix_web::HttpMessage;
 
 #[derive(Deserialize, Validate)]
 pub struct OpenPositionRequest {
@@ -41,6 +41,7 @@ pub struct TradesResponse {
     pub trades: Vec<Trade>,
     pub total_trades: usize,
 }
+
 #[derive(Serialize)]
 pub struct ErrorResponse {
     pub code: String,
@@ -67,6 +68,19 @@ fn validate_leverage(value: &Decimal) -> Result<(), validator::ValidationError> 
     Ok(())
 }
 
+/// Extract user_id from request extensions (set by middleware)
+fn get_user_id(req: &HttpRequest) -> Result<String, HttpResponse> {
+    req.extensions()
+        .get::<String>()
+        .cloned()
+        .ok_or_else(|| {
+            HttpResponse::Unauthorized().json(ErrorResponse {
+                code: "NO_USER_ID".to_string(),
+                message: "User ID not found in request".to_string(),
+            })
+        })
+}
+
 pub async fn health_check() -> HttpResponse {
     HttpResponse::Ok().json(HealthResponse {
         status: "healthy".to_string(),
@@ -75,10 +89,17 @@ pub async fn health_check() -> HttpResponse {
 }
 
 pub async fn open_position(
-    data: web::Data<Arc<RwLock<Engine>>>,
-    req: web::Json<OpenPositionRequest>,
+    req: HttpRequest,
+    data: web::Data<Arc<RwLock<MultiUserEngine>>>,
+    req_body: web::Json<OpenPositionRequest>,
 ) -> HttpResponse {
-    if let Err(e) = req.validate() {
+    // ✅ Extract user_id from token
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(response) => return response,
+    };
+
+    if let Err(e) = req_body.validate() {
         return HttpResponse::BadRequest().json(ErrorResponse {
             code: "VALIDATION_ERROR".to_string(),
             message: format!("Validation failed: {}", e),
@@ -87,14 +108,17 @@ pub async fn open_position(
 
     let mut engine = data.write().await;
 
-    match engine.open_position(
-        &req.asset,
-        req.margin,
-        req.leverage,
-        req.position_type.clone(),
+    // ✅ Get or create user account
+    let user_account = engine.get_or_create_user(&user_id, 1000.0);
+
+    match user_account.engine.open_position(
+        &req_body.asset,
+        req_body.margin,
+        req_body.leverage,
+        req_body.position_type.clone(),
     ) {
         Ok(position_id) => {
-            if let Some(position) = engine.get_position(position_id) {
+            if let Some(position) = user_account.engine.get_position(position_id) {
                 HttpResponse::Created().json(position.clone())
             } else {
                 HttpResponse::InternalServerError().json(ErrorResponse {
@@ -110,84 +134,170 @@ pub async fn open_position(
     }
 }
 
-pub async fn get_positions(data: web::Data<Arc<RwLock<Engine>>>) -> HttpResponse {
+pub async fn get_positions(
+    req: HttpRequest,
+    data: web::Data<Arc<RwLock<MultiUserEngine>>>,
+) -> HttpResponse {
+    // ✅ Extract user_id
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(response) => return response,
+    };
+
     let engine = data.read().await;
 
-    let all_positions = engine.get_all_positions();
-    let positions: Vec<Position> = all_positions.iter().map(|&p| p.clone()).collect();
+    // ✅ Get only this user's positions
+    match engine.get_user(&user_id) {
+        Some(user_account) => {
+            let all_positions = user_account.engine.get_all_positions();
+            let positions: Vec<Position> = all_positions.iter().map(|&p| p.clone()).collect();
+            let total = positions.len();
 
-    let total = positions.len();
-
-    drop(engine);
-
-    HttpResponse::Ok().json(PositionsResponse { positions, total })
-}
-pub async fn close_position(
-    data: web::Data<Arc<RwLock<Engine>>>,
-    req: web::Json<ClosePositionRequest>,
-) -> HttpResponse {
-    let mut engine = data.write().await;
-
-    match engine.close_position(req.position_id) {
-        Ok((pnl, equity_returned)) => HttpResponse::Ok().json(serde_json::json!({
-            "position_id": req.position_id,
-            "pnl": pnl,
-            "equity_returned": equity_returned,
-            "closed_at": chrono::Utc::now(),
-        })),
-        Err(e) => HttpResponse::NotFound().json(ErrorResponse {
-            code: "POSITION_NOT_FOUND".to_string(),
-            message: e,
+            HttpResponse::Ok().json(PositionsResponse { positions, total })
+        }
+        None => HttpResponse::NotFound().json(ErrorResponse {
+            code: "USER_NOT_FOUND".to_string(),
+            message: "User account not found".to_string(),
         }),
     }
 }
 
-pub async fn get_price(data: web::Data<Arc<RwLock<Engine>>>) -> HttpResponse {
+pub async fn close_position(
+    req: HttpRequest,
+    data: web::Data<Arc<RwLock<MultiUserEngine>>>,
+    req_body: web::Json<ClosePositionRequest>,
+) -> HttpResponse {
+    // ✅ Extract user_id
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(response) => return response,
+    };
+
+    let mut engine = data.write().await;
+
+    // ✅ Get user's engine
+    match engine.get_user_mut(&user_id) {
+        Some(user_account) => {
+            match user_account.engine.close_position(req_body.position_id) {
+                Ok((pnl, equity_returned)) => HttpResponse::Ok().json(serde_json::json!({
+                    "position_id": req_body.position_id,
+                    "pnl": pnl,
+                    "equity_returned": equity_returned,
+                    "closed_at": chrono::Utc::now(),
+                })),
+                Err(e) => HttpResponse::NotFound().json(ErrorResponse {
+                    code: "POSITION_NOT_FOUND".to_string(),
+                    message: e,
+                }),
+            }
+        }
+        None => HttpResponse::NotFound().json(ErrorResponse {
+            code: "USER_NOT_FOUND".to_string(),
+            message: "User account not found".to_string(),
+        }),
+    }
+}
+
+pub async fn get_price(
+    data: web::Data<Arc<RwLock<MultiUserEngine>>>,
+) -> HttpResponse {
     let engine = data.read().await;
-    let current_price = engine.current_price;
-    let history_len = engine.price_history.len();
 
-    let mark_price = engine.mark_price;
+    // ✅ Price is shared across all users (same market data)
+    // Get from any user, or maintain separate shared price
+    if let Some(first_user) = engine.get_all_users().first() {
+        if let Some(user_account) = engine.get_user(first_user) {
+            let current_price = user_account.engine.current_price;
+            let history_len = user_account.engine.price_history.len();
+            let mark_price = user_account.engine.mark_price;
 
-    drop(engine);
+            return HttpResponse::Ok().json(serde_json::json!({
+                "current_price": current_price,
+                "mark_price": mark_price,
+                "price_history_length": history_len,
+            }));
+        }
+    }
 
     HttpResponse::Ok().json(serde_json::json!({
-        "current_price": current_price,
-        "mark_price": mark_price,
-        "price_history_length": history_len,
+        "current_price": "No price data",
+        "mark_price": "No price data",
     }))
 }
 
-pub async fn get_funding_rate(data: web::Data<Arc<RwLock<Engine>>>) -> HttpResponse {
+pub async fn get_funding_rate(
+    data: web::Data<Arc<RwLock<MultiUserEngine>>>,
+) -> HttpResponse {
     let engine = data.read().await;
 
-    HttpResponse::Ok().json(serde_json::json!({
-        "funding_rate": engine.funding_rate,
-        "yearly_apr": engine.funding_rate * Decimal::from(365) * Decimal::from(24),
-        "last_funding_time": engine.last_funding_time.elapsed().as_secs(),
-    }))
+    // ✅ Funding rate is shared
+    if let Some(first_user) = engine.get_all_users().first() {
+        if let Some(user_account) = engine.get_user(first_user) {
+            return HttpResponse::Ok().json(serde_json::json!({
+                "funding_rate": user_account.engine.funding_rate,
+                "yearly_apr": user_account.engine.funding_rate * Decimal::from(365) * Decimal::from(24),
+                "last_funding_time": user_account.engine.last_funding_time.elapsed().as_secs(),
+            }));
+        }
+    }
+
+    HttpResponse::Ok().json(serde_json::json!({"error": "No data"}))
 }
 
-pub async fn get_balance(data: web::Data<Arc<RwLock<Engine>>>) -> HttpResponse {
+pub async fn get_balance(
+    req: HttpRequest,
+    data: web::Data<Arc<RwLock<MultiUserEngine>>>,
+) -> HttpResponse {
+    // ✅ Extract user_id
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(response) => return response,
+    };
+
     let engine = data.read().await;
 
-    HttpResponse::Ok().json(serde_json::json!({
-        "balance": engine.balance,
-        "total_equity": engine.get_total_equity(),
-        "currency": "USDT",
-    }))
+    // ✅ Get only this user's balance
+    match engine.get_user(&user_id) {
+        Some(user_account) => {
+            HttpResponse::Ok().json(serde_json::json!({
+                "balance": user_account.engine.balance,
+                "total_equity": user_account.engine.get_total_equity(),
+                "currency": "USDT",
+            }))
+        }
+        None => HttpResponse::NotFound().json(ErrorResponse {
+            code: "USER_NOT_FOUND".to_string(),
+            message: "User account not found".to_string(),
+        }),
+    }
 }
 
-pub async fn get_trade_history(data: web::Data<Arc<RwLock<Engine>>>) -> HttpResponse {
+pub async fn get_trade_history(
+    req: HttpRequest,
+    data: web::Data<Arc<RwLock<MultiUserEngine>>>,
+) -> HttpResponse {
+    // ✅ Extract user_id
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(response) => return response,
+    };
+
     let engine = data.read().await;
 
-    let trades: Vec<Trade> = engine.trade_history.iter().cloned().collect();
-    let total_trades = trades.len();
+    // ✅ Get only this user's trade history
+    match engine.get_user(&user_id) {
+        Some(user_account) => {
+            let trades: Vec<Trade> = user_account.engine.trade_history.iter().cloned().collect();
+            let total_trades = trades.len();
 
-    drop(engine);
-
-    HttpResponse::Ok().json(TradesResponse {
-        trades,
-        total_trades,
-    })
+            HttpResponse::Ok().json(TradesResponse {
+                trades,
+                total_trades,
+            })
+        }
+        None => HttpResponse::NotFound().json(ErrorResponse {
+            code: "USER_NOT_FOUND".to_string(),
+            message: "User account not found".to_string(),
+        }),
+    }
 }

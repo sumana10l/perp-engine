@@ -4,22 +4,19 @@ use std::env;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{error, info, warn};
+
 mod api;
 mod auth;
 mod engine;
 mod market;
 
 use crate::api::auth::login;
-use crate::api::position::close_position;
-use crate::api::position::get_balance;
-use crate::api::position::get_funding_rate;
-use crate::api::position::get_positions;
-use crate::api::position::get_price;
-use crate::api::position::get_trade_history;
-use crate::api::position::health_check;
-use crate::api::position::open_position;
-use crate::engine::engine::Engine;
+use crate::api::position::{
+    close_position, get_balance, get_funding_rate, get_positions, get_price, get_trade_history,
+    health_check, open_position,
+};
 use crate::engine::event::EngineEvent;
+use crate::engine::multi_user_engine::MultiUserEngine;
 use crate::market::ws::start_price_feed;
 
 #[actix_web::main]
@@ -30,9 +27,9 @@ async fn main() -> std::io::Result<()> {
         .with_thread_ids(true)
         .init();
 
-    info!("Starting perp-engine v0");
+    info!("Starting perp-engine v0 (Multi-User)");
 
-    let engine = Arc::new(RwLock::new(Engine::new(1000.0)));
+    let multi_engine = Arc::new(RwLock::new(MultiUserEngine::new()));
 
     let (tx, mut rx) = tokio::sync::mpsc::channel::<EngineEvent>(100);
 
@@ -48,38 +45,44 @@ async fn main() -> std::io::Result<()> {
         }
     });
 
-    let engine_clone = engine.clone();
+    let engine_clone = multi_engine.clone();
     tokio::spawn(async move {
         while let Some(event) = rx.recv().await {
             match event {
                 EngineEvent::PriceUpdate(price) => {
                     let update_result = {
-                        let mut engine = engine_clone.write().await;
-                        engine.update_price(price)
-                    };
+                        let mut multi_engine = engine_clone.write().await;
 
-                    match update_result {
-                        Ok(summary) => {
-                            info!(
-                                price = %summary.new_price,
-                                mark_price = %summary.mark_price,
-                                positions_affected = summary.positions_affected,
-                                liquidation_count = summary.liquidated_positions.len(),
-                                "Price updated"
-                            );
-
-                            if !summary.liquidated_positions.is_empty() {
-                                for (id, pnl) in summary.liquidated_positions {
-                                    warn!(
-                                        position_id = %id,
-                                        pnl = %pnl,
-                                        "Position liquidated"
-                                    );
+                        let mut results = Vec::new();
+                        for user_id in multi_engine.get_all_users() {
+                            if let Some(user_account) = multi_engine.get_user_mut(&user_id) {
+                                if let Ok(result) = user_account.engine.update_price(price) {
+                                    results.push((user_id.clone(), result));
                                 }
                             }
                         }
-                        Err(e) => {
-                            error!(error = %e, price = %price, "Price update failed");
+                        results
+                    };
+
+                    for (user_id, summary) in update_result {
+                        info!(
+                            user_id = %user_id,
+                            price = %summary.new_price,
+                            mark_price = %summary.mark_price,
+                            positions_affected = summary.positions_affected,
+                            liquidation_count = summary.liquidated_positions.len(),
+                            "Price updated for user"
+                        );
+
+                        if !summary.liquidated_positions.is_empty() {
+                            for (id, pnl) in summary.liquidated_positions {
+                                warn!(
+                                    user_id = %user_id,
+                                    position_id = %id,
+                                    pnl = %pnl,
+                                    "Position liquidated"
+                                );
+                            }
                         }
                     }
                 }
@@ -88,50 +91,49 @@ async fn main() -> std::io::Result<()> {
         error!("Engine event processor channel closed!");
     });
 
-    let engine_for_funding = engine.clone();
+    let engine_for_funding = multi_engine.clone();
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(3600));
         loop {
             interval.tick().await;
 
-            let funding_result = {
-                let mut engine = engine_for_funding.write().await;
-                engine.apply_funding()
-            };
+            let funding_results = {
+                let mut multi_engine = engine_for_funding.write().await;
 
-            match funding_result {
-                Ok(summary) => {
-                    info!(
-                        rate = %summary.rate,
-                        total_applied = %summary.total_funding_applied,
-                        liquidation_count = summary.liquidated_ids.len(),
-                        timestamp = ?summary.timestamp,
-                        "Funding applied"
-                    );
-
-                    if summary.total_funding_applied.abs() > rust_decimal_macros::dec!(1000) {
-                        error!(
-                            total_funding = %summary.total_funding_applied,
-                            "⚠️ CRITICAL: Massive funding spike detected!"
-                        );
-                    }
-
-                    if !summary.liquidated_ids.is_empty() {
-                        warn!(
-                            count = summary.liquidated_ids.len(),
-                            "Positions liquidated by funding"
-                        );
-                        for (id, pnl) in summary.liquidated_ids {
-                            warn!(
-                                position_id = %id,
-                                final_pnl = %pnl,
-                                "Funding liquidation"
-                            );
+                let mut results = Vec::new();
+                for user_id in multi_engine.get_all_users() {
+                    if let Some(user_account) = multi_engine.get_user_mut(&user_id) {
+                        if let Ok(result) = user_account.engine.apply_funding() {
+                            results.push((user_id.clone(), result));
                         }
                     }
                 }
-                Err(e) => {
-                    error!(error = %e, "Funding application failed");
+                results
+            };
+
+            for (user_id, summary) in funding_results {
+                info!(
+                    user_id = %user_id,
+                    rate = %summary.rate,
+                    total_applied = %summary.total_funding_applied,
+                    liquidation_count = summary.liquidated_ids.len(),
+                    "Funding applied for user"
+                );
+
+                if summary.total_funding_applied.abs() > rust_decimal_macros::dec!(1000) {
+                    error!(
+                        user_id = %user_id,
+                        total_funding = %summary.total_funding_applied,
+                        "⚠️ CRITICAL: Massive funding spike detected!"
+                    );
+                }
+
+                if !summary.liquidated_ids.is_empty() {
+                    warn!(
+                        user_id = %user_id,
+                        count = summary.liquidated_ids.len(),
+                        "Positions liquidated by funding"
+                    );
                 }
             }
         }
@@ -154,7 +156,7 @@ async fn main() -> std::io::Result<()> {
                     .allow_any_method()
                     .allow_any_header(),
             )
-            .app_data(web::Data::new(engine.clone()))
+            .app_data(web::Data::new(multi_engine.clone()))
             .route("/auth/login", web::post().to(login))
             .route("/health", web::get().to(health_check))
             .route("/position/open", web::post().to(open_position))

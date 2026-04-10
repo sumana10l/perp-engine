@@ -1,6 +1,6 @@
 use crate::auth::verify_token;
 use actix_web::{
-    Error,
+    Error, HttpMessage,
     dev::{Service, ServiceRequest, ServiceResponse, Transform},
 };
 use futures_util::future::{LocalBoxFuture, Ready, ok};
@@ -55,7 +55,9 @@ where
 
         match token {
             Some(t) => match verify_token(t) {
-                Ok(_) => {
+                Ok(claims) => {
+                    req.extensions_mut().insert(claims.sub.clone());
+
                     let fut = self.service.call(req);
                     Box::pin(async move { fut.await })
                 }

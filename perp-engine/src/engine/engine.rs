@@ -20,8 +20,8 @@ pub struct FundingResult {
     pub rate: Decimal,
     pub total_funding_applied: Decimal,
     pub liquidated_ids: Vec<(Uuid, Decimal)>,
-    pub timestamp: std::time::Instant,
 }
+#[derive(Clone)]
 
 pub struct Engine {
     pub positions: HashMap<Uuid, Position>,
@@ -229,7 +229,6 @@ impl Engine {
             rate,
             total_funding_applied: total_applied,
             liquidated_ids,
-            timestamp: self.last_funding_time,
         })
     }
 

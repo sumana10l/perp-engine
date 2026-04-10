@@ -28,6 +28,17 @@ if [ -z "$TOKEN" ]; then
     exit 1
 fi
 
+echo "⏳ Waiting for price feed to initialize..."
+for i in {1..10}; do
+    PRICE=$(curl -s $BASE_URL/price -H "Authorization: Bearer $TOKEN" | grep -o '"current_price":"[^"]*"' | cut -d'"' -f4)
+    if [ "$PRICE" != "0.00000000" ] && [ -n "$PRICE" ]; then
+        echo "✅ Price ready: $PRICE"
+        break
+    fi
+    echo "Attempt $i: price not ready, waiting..."
+    sleep 2
+done
+
 echo "---------------------------------"
 echo "1️⃣ Opening position"
 echo "---------------------------------"
