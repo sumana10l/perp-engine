@@ -15,6 +15,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
     setLoading(true);
     try {
       await login(username, password);
+      await new Promise(resolve => setTimeout(resolve, 50));
       onLogin();
     } catch {
       setError("Invalid credentials");
@@ -22,6 +23,8 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
       setLoading(false);
     }
   };
+
+  
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center">

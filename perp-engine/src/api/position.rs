@@ -68,7 +68,6 @@ fn validate_leverage(value: &Decimal) -> Result<(), validator::ValidationError> 
     Ok(())
 }
 
-/// Extract user_id from request extensions (set by middleware)
 fn get_user_id(req: &HttpRequest) -> Result<String, HttpResponse> {
     req.extensions()
         .get::<String>()
@@ -93,7 +92,6 @@ pub async fn open_position(
     data: web::Data<Arc<RwLock<MultiUserEngine>>>,
     req_body: web::Json<OpenPositionRequest>,
 ) -> HttpResponse {
-    // ✅ Extract user_id from token
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
         Err(response) => return response,
@@ -108,7 +106,6 @@ pub async fn open_position(
 
     let mut engine = data.write().await;
 
-    // ✅ Get or create user account
     let user_account = engine.get_or_create_user(&user_id, 1000.0);
 
     match user_account.engine.open_position(
@@ -138,7 +135,6 @@ pub async fn get_positions(
     req: HttpRequest,
     data: web::Data<Arc<RwLock<MultiUserEngine>>>,
 ) -> HttpResponse {
-    // ✅ Extract user_id
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
         Err(response) => return response,
@@ -146,7 +142,6 @@ pub async fn get_positions(
 
     let engine = data.read().await;
 
-    // ✅ Get only this user's positions
     match engine.get_user(&user_id) {
         Some(user_account) => {
             let all_positions = user_account.engine.get_all_positions();
@@ -155,9 +150,9 @@ pub async fn get_positions(
 
             HttpResponse::Ok().json(PositionsResponse { positions, total })
         }
-        None => HttpResponse::NotFound().json(ErrorResponse {
-            code: "USER_NOT_FOUND".to_string(),
-            message: "User account not found".to_string(),
+        None => HttpResponse::Ok().json(PositionsResponse {
+            positions: vec![],
+            total: 0,
         }),
     }
 }
@@ -167,7 +162,6 @@ pub async fn close_position(
     data: web::Data<Arc<RwLock<MultiUserEngine>>>,
     req_body: web::Json<ClosePositionRequest>,
 ) -> HttpResponse {
-    // ✅ Extract user_id
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
         Err(response) => return response,
@@ -175,7 +169,6 @@ pub async fn close_position(
 
     let mut engine = data.write().await;
 
-    // ✅ Get user's engine
     match engine.get_user_mut(&user_id) {
         Some(user_account) => {
             match user_account.engine.close_position(req_body.position_id) {
@@ -203,8 +196,6 @@ pub async fn get_price(
 ) -> HttpResponse {
     let engine = data.read().await;
 
-    // ✅ Price is shared across all users (same market data)
-    // Get from any user, or maintain separate shared price
     if let Some(first_user) = engine.get_all_users().first() {
         if let Some(user_account) = engine.get_user(first_user) {
             let current_price = user_account.engine.current_price;
@@ -230,7 +221,6 @@ pub async fn get_funding_rate(
 ) -> HttpResponse {
     let engine = data.read().await;
 
-    // ✅ Funding rate is shared
     if let Some(first_user) = engine.get_all_users().first() {
         if let Some(user_account) = engine.get_user(first_user) {
             return HttpResponse::Ok().json(serde_json::json!({
@@ -248,7 +238,6 @@ pub async fn get_balance(
     req: HttpRequest,
     data: web::Data<Arc<RwLock<MultiUserEngine>>>,
 ) -> HttpResponse {
-    // ✅ Extract user_id
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
         Err(response) => return response,
@@ -256,7 +245,6 @@ pub async fn get_balance(
 
     let engine = data.read().await;
 
-    // ✅ Get only this user's balance
     match engine.get_user(&user_id) {
         Some(user_account) => {
             HttpResponse::Ok().json(serde_json::json!({
@@ -265,10 +253,11 @@ pub async fn get_balance(
                 "currency": "USDT",
             }))
         }
-        None => HttpResponse::NotFound().json(ErrorResponse {
-            code: "USER_NOT_FOUND".to_string(),
-            message: "User account not found".to_string(),
-        }),
+        None => HttpResponse::Ok().json(serde_json::json!({
+            "balance": 1000.0,
+            "total_equity": 1000.0,
+            "currency": "USDT",
+        })),
     }
 }
 
@@ -276,7 +265,6 @@ pub async fn get_trade_history(
     req: HttpRequest,
     data: web::Data<Arc<RwLock<MultiUserEngine>>>,
 ) -> HttpResponse {
-    // ✅ Extract user_id
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
         Err(response) => return response,
@@ -284,7 +272,6 @@ pub async fn get_trade_history(
 
     let engine = data.read().await;
 
-    // ✅ Get only this user's trade history
     match engine.get_user(&user_id) {
         Some(user_account) => {
             let trades: Vec<Trade> = user_account.engine.trade_history.iter().cloned().collect();
@@ -295,9 +282,9 @@ pub async fn get_trade_history(
                 total_trades,
             })
         }
-        None => HttpResponse::NotFound().json(ErrorResponse {
-            code: "USER_NOT_FOUND".to_string(),
-            message: "User account not found".to_string(),
+        None => HttpResponse::Ok().json(TradesResponse {
+            trades: vec![],
+            total_trades: 0,
         }),
     }
 }

@@ -147,14 +147,15 @@ async fn main() -> std::io::Result<()> {
     info!("Starting HTTP server on 0.0.0.0:{}", port);
 
     let server = HttpServer::new(move || {
-        App::new()
+            App::new()
             .wrap(JwtMiddleware)
             .wrap(middleware::Logger::default())
             .wrap(
                 actix_cors::Cors::default()
                     .allow_any_origin()
                     .allow_any_method()
-                    .allow_any_header(),
+                    .allow_any_header()
+                    .max_age(3600),
             )
             .app_data(web::Data::new(multi_engine.clone()))
             .route("/auth/login", web::post().to(login))

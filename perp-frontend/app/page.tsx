@@ -14,12 +14,17 @@ export default function Home() {
   const [price, setPrice] = useState(0);
   const [activePanel, setActivePanel] = useState<"positions" | "history" | null>("positions");
 
+  const handleLogin = () => {
+    if (localStorage.getItem("token")) {
+      setAuthed(true);
+    }
+  };
+
   useEffect(() => {
     setAuthed(!!localStorage.getItem("token"));
   }, []);
 
-  if (!authed) return <Login onLogin={() => setAuthed(true)} />;
-
+  if (!authed) return <Login onLogin={handleLogin} />;
   return (
     <main className="min-h-screen p-10 bg-gray-900 text-white">
       <div className="flex items-center justify-between mb-10">

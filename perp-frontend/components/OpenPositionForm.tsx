@@ -108,7 +108,7 @@ export default function OpenPositionForm({ balance, price }: Props) {
         <div className="flex items-center space-x-2">
           <input
             type="number"
-            value={price}
+            value={isNaN(price) || price <= 0 ? "" : price}
             className="flex-grow bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white"
             placeholder="Price"
             readOnly
