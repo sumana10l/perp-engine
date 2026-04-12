@@ -11,7 +11,9 @@ A full-stack perpetual futures trading platform. Rust backend with real-time ris
 - **Architecture:** Event-driven, non-blocking async with fixed-point math
 
 ---
-
+## Architecture
+![Architecture](screenshots/v0.png)
+---
 ## Quick Start
 
 ### Backend
