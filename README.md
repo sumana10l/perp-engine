@@ -12,7 +12,7 @@ A full-stack perpetual futures trading platform. Rust backend with real-time ris
 
 ---
 ## Architecture
-![Architecture](screenshots/v0.png)
+![Architecture](screenshots/v0.1.png)
 ---
 ## Quick Start
 
