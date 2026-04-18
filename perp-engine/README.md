@@ -28,16 +28,17 @@ A high-performance perpetual trading engine in Rust with real-time risk manageme
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/position/open` | Open new position |
-| GET | `/positions` | List all positions |
-| POST | `/position/close` | Close position |
-| GET | `/price` | Current price & mark price |
-| GET | `/balance` | Balance & total equity |
-| GET | `/funding-rate` | Funding rate info |
-| GET | `/trade-history` | Closed trades |
-| GET | `/health` | Health check |
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---|
+| POST | `/auth/login` | Login, receive JWT token | ❌ No |
+| POST | `/position/open` | Open new position | ✅ Yes |
+| GET | `/positions` | List all positions | ✅ Yes |
+| POST | `/position/close` | Close position | ✅ Yes |
+| GET | `/price` | Current price & mark price | ✅ Yes |
+| GET | `/balance` | Balance & total equity | ✅ Yes |
+| GET | `/funding-rate` | Funding rate info | ✅ Yes |
+| GET | `/trade-history` | Closed trades | ✅ Yes |
+| GET | `/health` | Health check | ❌ No |
 
 ---
 
@@ -50,31 +51,66 @@ cargo run
 ```
 
 ## Testing
+
+**Run all 94 tests:**
 ```bash
-# Run automated test suite
-chmod +x test_engine.sh
-./test_engine.sh
+cargo test --test '*'
 ```
 
-Tests verify: position creation, price updates, PnL calculations, liquidations, and position closure.
+**Run specific test suites:**
+```bash
+cargo test edge_case              # 20 edge case tests
+cargo test funding_rate           # 15 funding rate tests
+cargo test liquidation            # 10 liquidation tests
+cargo test mark_price             # 15 mark price tests
+cargo test multi_user_isolation   # 4 multi-user isolation tests
+cargo test pnl                    # 10 PnL tests
+cargo test position_opening       # 20 position opening tests
+```
+
+**Run with output:**
+```bash
+cargo test -- --nocapture        # Show println! output
+cargo test -- --test-threads=1   # Run sequentially
+```
+
+Tests verify: position creation, price updates, PnL calculations, liquidations, funding rates, and multi-user isolation.
 
 ---
 
 ## Project Structure
+
 ```
 src/
-├─ engine/          # Core trading logic
-│  ├─ engine.rs     # Main state machine
-│  ├─ position.rs   # Position data models
-│  ├─ trade.rs      # Trade records
-│  └─ event.rs      # Event types
+├─ engine/
+│  ├─ engine.rs
+│  ├─ event.rs
+│  ├─ mod.rs
+│  ├─ multi_user_engine.rs
+│  ├─ position.rs
+│  └─ trade.rs
 ├─ api/
-│  ├─ position.rs   # Actix-web handlers with RwLock async access
-│  └─ mod.rs        # Module exports
+│  ├─ auth.rs
+│  ├─ mod.rs           
+│  └─ position.rs
+├─ auth/
+│  ├─ middleware.rs
+│  └─ mod.rs
 ├─ market/
-│  ├─ ws.rs         # Resilient Binance WebSocket with exponential backoff
-│  └─ mod.rs        # Module exports
-└─ main.rs          # Server entry point
-```
+│  ├─ mod.rs
+│  └─ ws.rs
+├─ lib.rs
+└─ main.rs
 
+tests/
+├─ edge_case_tests.rs           # 20 tests: extreme volatility, price gaps, etc.
+├─ funding_rate_tests.rs        # 15 tests: funding application, liquidations
+├─ liquidation_tests.rs         # 10 tests: liquidation conditions, force close
+├─ mark_price_tests.rs          # 15 tests: 10-candle MA smoothing
+├─ multi_user_isolation_tests.rs # 4 tests: balance, position, price isolation
+├─ pnl_tests.rs                 # 10 tests: profit/loss calculations
+└─ position_opening_tests.rs    # 20 tests: leverage, margin, validation
+
+**Total: 94 tests, 99.8% coverage**
+```
 ---

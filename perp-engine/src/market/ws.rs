@@ -81,7 +81,13 @@ async fn handle_price_message(
     let json = serde_json::from_str::<Value>(&text)?;
 
     if let Some(price_str) = json["p"].as_str() {
+
         let price = Decimal::from_str(price_str)?;
+
+
+        if price <= Decimal::ZERO {
+            return Err(format!("Invalid price: {} (must be positive)", price).into());
+        }
 
         match tx.send(EngineEvent::PriceUpdate(price)).await {
             Ok(_) => Ok(()),
